@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npx expo start --tunnel)",
+      "Read(//Users/deanfieldz/**)",
+      "Bash(npx expo start)",
+      "Bash(npx expo install:*)",
+      "Bash(npm install:*)",
+      "Bash(npx expo start:*)",
+      "Bash(git init:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)",
+      "Bash(taskkill:*)",
+      "Read(//c/Users/deanf/Downloads/**)",
+      "Bash(npm uninstall:*)",
+      "Bash(cd:*)",
+      "Read(//c/Users/deanf/OneDrive/Desktop/projects/**)",
+      "Read(//c/Users/deanf/.git/**)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(watchman watch-del-all:*)",
+      "Bash(rm:*)",
+      "Bash(npx tsc:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
