@@ -1,0 +1,94 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import { Recipe } from '../types';
+
+const API_KEY_STORAGE = 'openai_api_key';
+const RECIPES_STORAGE = 'saved_recipes';
+
+// API Key Management
+export const saveApiKey = async (apiKey: string): Promise<void> => {
+  try {
+    await SecureStore.setItemAsync(API_KEY_STORAGE, apiKey);
+  } catch (error) {
+    console.error('Error saving API key:', error);
+    throw error;
+  }
+};
+
+export const getApiKey = async (): Promise<string | null> => {
+  try {
+    return await SecureStore.getItemAsync(API_KEY_STORAGE);
+  } catch (error) {
+    console.error('Error getting API key:', error);
+    return null;
+  }
+};
+
+export const deleteApiKey = async (): Promise<void> => {
+  try {
+    await SecureStore.deleteItemAsync(API_KEY_STORAGE);
+  } catch (error) {
+    console.error('Error deleting API key:', error);
+    throw error;
+  }
+};
+
+// Recipe Management
+export const saveRecipe = async (recipe: Recipe): Promise<void> => {
+  try {
+    const existingRecipes = await getSavedRecipes();
+    const updatedRecipes = [...existingRecipes, recipe];
+    await AsyncStorage.setItem(RECIPES_STORAGE, JSON.stringify(updatedRecipes));
+  } catch (error) {
+    console.error('Error saving recipe:', error);
+    throw error;
+  }
+};
+
+export const getSavedRecipes = async (): Promise<Recipe[]> => {
+  try {
+    const recipesJson = await AsyncStorage.getItem(RECIPES_STORAGE);
+    return recipesJson ? JSON.parse(recipesJson) : [];
+  } catch (error) {
+    console.error('Error getting saved recipes:', error);
+    return [];
+  }
+};
+
+export const deleteRecipe = async (recipeId: string): Promise<void> => {
+  try {
+    const existingRecipes = await getSavedRecipes();
+    const updatedRecipes = existingRecipes.filter(r => r.id !== recipeId);
+    await AsyncStorage.setItem(RECIPES_STORAGE, JSON.stringify(updatedRecipes));
+  } catch (error) {
+    console.error('Error deleting recipe:', error);
+    throw error;
+  }
+};
+
+export const getRecipesByCategory = async (category: string): Promise<Recipe[]> => {
+  try {
+    const allRecipes = await getSavedRecipes();
+    return allRecipes.filter(r => r.category === category);
+  } catch (error) {
+    console.error('Error getting recipes by category:', error);
+    return [];
+  }
+};
+
+export const updateRecipe = async (updatedRecipe: Recipe): Promise<void> => {
+  try {
+    const existingRecipes = await getSavedRecipes();
+    const recipeIndex = existingRecipes.findIndex(r => r.id === updatedRecipe.id);
+
+    if (recipeIndex !== -1) {
+      existingRecipes[recipeIndex] = updatedRecipe;
+      await AsyncStorage.setItem(RECIPES_STORAGE, JSON.stringify(existingRecipes));
+    }
+  } catch (error) {
+    console.error('Error updating recipe:', error);
+    throw error;
+  }
+};
+
+export const CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Desserts', 'Snacks'];
