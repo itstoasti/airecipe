@@ -92,7 +92,7 @@ export const updateRecipe = async (updatedRecipe: Recipe): Promise<void> => {
   }
 };
 
-export const CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Desserts', 'Snacks'];
+export const CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Desserts', 'Snacks', 'Drinks'];
 
 // Chat Messages Management
 export const saveChatMessages = async (recipeId: string, messages: Message[]): Promise<void> => {

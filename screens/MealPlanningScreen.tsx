@@ -8,6 +8,7 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -15,6 +16,7 @@ import { RootStackParamList, Recipe } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 import { getSavedRecipes } from '../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAllRecipes } from '../utils/recipeDatabase';
 
 type MealPlanningScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -47,6 +49,12 @@ export default function MealPlanningScreen({ navigation }: Props) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string>('');
   const [selectedMealTime, setSelectedMealTime] = useState<MealTime>('breakfast');
+  const [manualEntryVisible, setManualEntryVisible] = useState(false);
+  const [manualMealName, setManualMealName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [databaseRecipes, setDatabaseRecipes] = useState<Recipe[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showDatabaseRecipes, setShowDatabaseRecipes] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -84,7 +92,32 @@ export default function MealPlanningScreen({ navigation }: Props) {
   const handleAddMeal = (day: string, mealTime: MealTime) => {
     setSelectedDay(day);
     setSelectedMealTime(mealTime);
+    setSearchQuery('');
+    setDatabaseRecipes([]);
+    setShowDatabaseRecipes(false);
     setModalVisible(true);
+  };
+
+  const handleSearchDatabase = async () => {
+    if (!searchQuery.trim()) {
+      Alert.alert('Error', 'Please enter a search term');
+      return;
+    }
+
+    setSearchLoading(true);
+    setShowDatabaseRecipes(true);
+    try {
+      const results = await getAllRecipes(0, 20, searchQuery.trim(), 'random');
+      setDatabaseRecipes(results);
+      if (results.length === 0) {
+        Alert.alert('No Results', 'No recipes found matching your search');
+      }
+    } catch (error) {
+      console.error('Error searching recipes:', error);
+      Alert.alert('Error', 'Failed to search recipes');
+    } finally {
+      setSearchLoading(false);
+    }
   };
 
   const handleSelectRecipe = (recipe: Recipe) => {
@@ -95,6 +128,39 @@ export default function MealPlanningScreen({ navigation }: Props) {
     updatedPlan[selectedDay][selectedMealTime] = recipe;
     saveMealPlan(updatedPlan);
     setModalVisible(false);
+  };
+
+  const handleManualEntry = () => {
+    setModalVisible(false);
+    setManualMealName('');
+    setManualEntryVisible(true);
+  };
+
+  const handleSaveManualMeal = () => {
+    if (!manualMealName.trim()) {
+      Alert.alert('Error', 'Please enter a meal name');
+      return;
+    }
+
+    // Create a simple recipe object for manual entry
+    const manualRecipe: Recipe = {
+      id: `manual-${Date.now()}`,
+      title: manualMealName.trim(),
+      ingredients: [],
+      instructions: [],
+      estimatedTime: '',
+      servingSize: 1,
+      caloriesPerServing: 0,
+    };
+
+    const updatedPlan = { ...mealPlan };
+    if (!updatedPlan[selectedDay]) {
+      updatedPlan[selectedDay] = {};
+    }
+    updatedPlan[selectedDay][selectedMealTime] = manualRecipe;
+    saveMealPlan(updatedPlan);
+    setManualEntryVisible(false);
+    setManualMealName('');
   };
 
   const handleRemoveMeal = (day: string, mealTime: MealTime) => {
@@ -275,8 +341,64 @@ export default function MealPlanningScreen({ navigation }: Props) {
               </TouchableOpacity>
             </View>
 
+            <TouchableOpacity
+              style={[styles.manualEntryButton, { backgroundColor: colors.primary }]}
+              onPress={handleManualEntry}
+            >
+              <Ionicons name="create-outline" size={20} color="#fff" />
+              <Text style={styles.manualEntryButtonText}>Manual Entry</Text>
+            </TouchableOpacity>
+
+            <View style={[styles.searchContainer, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
+              <Ionicons name="search" size={20} color={colors.textSecondary} />
+              <TextInput
+                style={[styles.searchInput, { color: colors.text }]}
+                placeholder="Search database recipes..."
+                placeholderTextColor={colors.placeholder}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                onSubmitEditing={handleSearchDatabase}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => {
+                  setSearchQuery('');
+                  setDatabaseRecipes([]);
+                  setShowDatabaseRecipes(false);
+                }}>
+                  <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.searchButton, { backgroundColor: colors.teal }]}
+              onPress={handleSearchDatabase}
+              disabled={searchLoading || !searchQuery.trim()}
+            >
+              {searchLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="search-outline" size={20} color="#fff" />
+                  <Text style={styles.searchButtonText}>Search Database</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {showDatabaseRecipes && databaseRecipes.length > 0 && (
+              <Text style={[styles.sectionLabel, { color: colors.text }]}>
+                Database Results ({databaseRecipes.length})
+              </Text>
+            )}
+
+            {!showDatabaseRecipes && (
+              <Text style={[styles.sectionLabel, { color: colors.text }]}>
+                Your Saved Recipes
+              </Text>
+            )}
+
             <ScrollView style={styles.recipeList}>
-              {savedRecipes.map((recipe) => (
+              {(showDatabaseRecipes ? databaseRecipes : savedRecipes).map((recipe) => (
                 <TouchableOpacity
                   key={recipe.id}
                   style={[styles.recipeItem, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
@@ -299,6 +421,53 @@ export default function MealPlanningScreen({ navigation }: Props) {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={manualEntryVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setManualEntryVisible(false)}
+      >
+        <View style={styles.manualModalOverlay}>
+          <View style={[styles.manualModalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.manualModalTitle, { color: colors.text }]}>
+              Enter Meal Name
+            </Text>
+            <Text style={[styles.manualModalSubtitle, { color: colors.textSecondary }]}>
+              {selectedDay} - {selectedMealTime.charAt(0).toUpperCase() + selectedMealTime.slice(1)}
+            </Text>
+
+            <TextInput
+              style={[styles.manualInput, { backgroundColor: colors.inputBackground, color: colors.text, borderColor: colors.border }]}
+              placeholder="e.g., Pizza from Tony's, Leftover pasta"
+              placeholderTextColor={colors.placeholder}
+              value={manualMealName}
+              onChangeText={setManualMealName}
+              autoFocus
+              maxLength={100}
+            />
+
+            <View style={styles.manualModalButtons}>
+              <TouchableOpacity
+                style={[styles.manualCancelButton, { borderColor: colors.border }]}
+                onPress={() => {
+                  setManualEntryVisible(false);
+                  setManualMealName('');
+                }}
+              >
+                <Text style={[styles.manualCancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.manualSaveButton, { backgroundColor: colors.primary }]}
+                onPress={handleSaveManualMeal}
+              >
+                <Text style={styles.manualSaveButtonText}>Add Meal</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -482,5 +651,117 @@ const styles = StyleSheet.create({
   recipeItemMeta: {
     flexDirection: 'row',
     gap: 12,
+  },
+  manualEntryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 8,
+  },
+  manualEntryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    padding: 0,
+  },
+  searchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    padding: 14,
+    borderRadius: 8,
+  },
+  searchButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginHorizontal: 20,
+    marginBottom: 12,
+  },
+  manualModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  manualModalContent: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  manualModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  manualModalSubtitle: {
+    fontSize: 14,
+    marginBottom: 20,
+  },
+  manualInput: {
+    borderRadius: 8,
+    padding: 14,
+    fontSize: 16,
+    borderWidth: 1,
+    marginBottom: 20,
+  },
+  manualModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  manualCancelButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  manualCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  manualSaveButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  manualSaveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
