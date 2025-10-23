@@ -36,13 +36,14 @@ Please provide 4 diverse recipe suggestions. For each recipe, provide:
 - Serving size: MUST be exactly ${servingSize} servings (the number requested by the user)
 - Calories per serving: EXTREMELY ACCURATE calorie count per serving. This is CRITICAL for health/diet tracking.
 
-MANDATORY CALORIE CALCULATION PROCESS (you MUST show your work mentally):
-Step 1: For EACH ingredient, calculate exact calories:
+MANDATORY CALORIE CALCULATION PROCESS (you MUST calculate for EVERY SINGLE ingredient - NO EXCEPTIONS):
+Step 1: For EACH AND EVERY ingredient listed (including seasonings, oils, butter, cheese, etc.), calculate exact calories:
   - Convert measurement to grams/ml
   - Use USDA FoodData Central values
   - Calculate: (ingredient amount in grams ÷ 100) × calories per 100g
+  - VERIFY you counted every single item in the ingredients list
 
-Step 2: Sum ALL ingredient calories (total recipe calories)
+Step 2: Sum ALL ingredient calories (total recipe calories) - recount to ensure nothing was missed
 
 Step 3: Divide by ${servingSize} servings
 
@@ -97,7 +98,12 @@ USDA CALORIE REFERENCE (per 100g unless noted):
 - Peanut butter: 588 cal (1 tbsp = 16g = 94 cal)
 - Soy sauce: 53 cal/100ml (1 tbsp = 15ml = 8 cal)
 
-CRITICAL: Do NOT skip oils, butter, cheese, or any ingredient. These add significant calories!
+CRITICAL RULES - ABSOLUTELY NO EXCEPTIONS:
+1. Calculate calories for EVERY SINGLE ingredient in the recipe - count them to verify
+2. Do NOT skip oils, butter, cheese, seasonings, or ANY ingredient
+3. Even small amounts (1 tsp, 1 tbsp) must be calculated - they add up
+4. Recount your ingredient list before finalizing to ensure nothing was missed
+5. High-calorie ingredients (oils, butter, cheese, nuts, meat) are often accidentally skipped - double-check these
 
 Format your response as a JSON array with this structure:
 [
@@ -184,8 +190,22 @@ Instructions: ${recipe.instructions.join(' ')}
 
 Guidelines:
 1. Keep responses brief and friendly (1-2 sentences max)
-2. Recalculate calories if ingredients change: sum all ingredient calories, divide by servings
-3. Give clear, helpful instructions
+2. Give clear, helpful instructions
+
+CRITICAL CALORIE RECALCULATION RULES (when ingredients change):
+You MUST calculate calories for EVERY SINGLE ingredient in the updated recipe - NO EXCEPTIONS:
+- For EACH ingredient, convert to grams/ml and calculate: (amount in grams ÷ 100) × calories per 100g
+- DO NOT skip ANY ingredient (oils, butter, cheese, seasonings, spices, etc.)
+- Count your ingredients to verify you calculated all of them
+- Sum ALL ingredient calories, then divide by servings
+- High-calorie items (oils, butter, cheese, nuts, meat) are often missed - double-check these
+- Round to nearest 5 calories
+
+Use USDA values (per 100g unless noted):
+Olive oil: 884 cal/100ml | Butter: 717 cal | Chicken breast (cooked): 195 cal | Ground beef 90% lean (cooked): 250 cal
+Eggs (1 large): 72 cal | Rice (cooked): 130 cal | Pasta (cooked): 131 cal | Cheese (cheddar): 402 cal
+Cheese (parmesan): 431 cal | Heavy cream: 340 cal/100ml | Sugar: 387 cal | Flour: 364 cal
+Peanut butter: 588 cal (1 tbsp = 94 cal) | Vegetables: typically 20-80 cal
 
 Response format:
 {
