@@ -323,7 +323,8 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
     >
       <TouchableOpacity
         style={styles.themeToggle}
@@ -424,13 +425,10 @@ export default function HomeScreen({ navigation }: Props) {
       {isIngredientsMode && ingredientsList.length > 0 && (
         <View style={[styles.ingredientsListContainer, {
           backgroundColor: colors.background,
-          bottom: keyboardHeight > 0 ? keyboardHeight + 72 : 90
+          borderTopColor: colors.border,
+          bottom: 72
         }]}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.ingredientsContainer}
-          >
+          <View style={styles.ingredientsContainer}>
             {ingredientsList.map((ingredient, index) => (
               <View key={index} style={[styles.ingredientChip, { backgroundColor: colors.teal }]}>
                 <Text style={styles.ingredientChipText}>{ingredient}</Text>
@@ -439,17 +437,17 @@ export default function HomeScreen({ navigation }: Props) {
                 </TouchableOpacity>
               </View>
             ))}
-          </ScrollView>
+          </View>
         </View>
       )}
 
       <View style={[styles.searchContainer, {
         backgroundColor: colors.background,
         borderTopColor: colors.border,
-        bottom: keyboardHeight > 0 ? keyboardHeight - (Platform.OS === 'android' ? 40 : 0) : 0,
-        paddingBottom: keyboardHeight > 0 ? 0 : 24,
+        bottom: 0,
+        paddingBottom: keyboardHeight > 0 ? 8 : 24,
         paddingTop: keyboardHeight > 0 ? 8 : 16,
-        paddingHorizontal: keyboardHeight > 0 ? 16 : 16,
+        paddingHorizontal: 16,
         borderTopWidth: keyboardHeight > 0 ? 0 : 1
       }]}>
         <View style={styles.inputWrapper}>
@@ -880,11 +878,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: '#eee',
+    maxHeight: 120,
   },
   ingredientsContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
-    paddingRight: 8,
   },
   ingredientChip: {
     flexDirection: 'row',
@@ -904,7 +903,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   addButton: {
-    padding: 12,
     borderRadius: 24,
     width: 48,
     height: 48,
