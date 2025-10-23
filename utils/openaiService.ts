@@ -251,16 +251,39 @@ Response format:
     // Try to parse as JSON first
     try {
       const parsed = JSON.parse(jsonContent);
-      return {
-        response: parsed.response,
-        updatedRecipe: {
-          ...recipe,
-          ...parsed.updatedRecipe,
-          id: recipe.id,
-        },
-      };
+
+      // If we successfully parsed JSON, check if it has the expected structure
+      if (parsed.response && parsed.updatedRecipe) {
+        return {
+          response: parsed.response,
+          updatedRecipe: {
+            ...recipe,
+            ...parsed.updatedRecipe,
+            id: recipe.id,
+          },
+        };
+      } else {
+        // JSON parsed but wrong structure - return as plain text
+        return {
+          response: content,
+          updatedRecipe: recipe,
+        };
+      }
     } catch {
-      // If not JSON, return as plain text response without updating recipe
+      // If not valid JSON, check if the response accidentally contains raw JSON text
+      // This happens when the AI returns JSON as a string instead of actual JSON
+      if (jsonContent.includes('"response"') && jsonContent.includes('"updatedRecipe"')) {
+        // Try to extract just the response field from the visible JSON
+        const responseMatch = jsonContent.match(/"response"\s*:\s*"([^"]+)"/);
+        if (responseMatch && responseMatch[1]) {
+          return {
+            response: responseMatch[1],
+            updatedRecipe: recipe,
+          };
+        }
+      }
+
+      // Otherwise return as plain text response without updating recipe
       return {
         response: content,
         updatedRecipe: recipe,
