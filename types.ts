@@ -16,12 +16,16 @@ export interface Message {
 
 export type RootStackParamList = {
   ApiKeySetup: undefined;
+  Login: undefined;
+  SignUp: undefined;
+  ForgotPassword: undefined;
   MainTabs: undefined;
   ChatToModify: { recipe: Recipe };
   ShoppingList: { recipe: Recipe };
   PopularRecipes: undefined;
   AddRecipe: undefined;
   MealPlanning: undefined;
+  Profile: undefined;
 };
 
 export type MainTabParamList = {

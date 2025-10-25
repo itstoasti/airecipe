@@ -47,7 +47,7 @@ const LOADING_MESSAGES = [
 ];
 
 export default function HomeScreen({ navigation }: Props) {
-  const { colors, isDark, themeMode, setThemeMode } = useTheme();
+  const { colors } = useTheme();
   const [query, setQuery] = useState('');
   const [servingSize, setServingSize] = useState(2);
   const [servingPickerVisible, setServingPickerVisible] = useState(false);
@@ -56,7 +56,6 @@ export default function HomeScreen({ navigation }: Props) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [themeModalVisible, setThemeModalVisible] = useState(false);
   const [calorieInfoVisible, setCalorieInfoVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [successVisible, setSuccessVisible] = useState(false);
@@ -352,11 +351,11 @@ export default function HomeScreen({ navigation }: Props) {
       keyboardVerticalOffset={0}
     >
       <TouchableOpacity
-        style={styles.themeToggle}
-        onPress={() => setThemeModalVisible(true)}
+        style={styles.profileButton}
+        onPress={() => navigation.navigate('Profile')}
       >
         <Ionicons
-          name={isDark ? 'moon' : 'sunny'}
+          name="person"
           size={24}
           color={colors.text}
         />
@@ -621,55 +620,6 @@ export default function HomeScreen({ navigation }: Props) {
       </Modal>
 
       <Modal
-        visible={themeModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setThemeModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Choose Theme</Text>
-
-            {(['light', 'dark', 'system'] as const).map((mode) => (
-              <TouchableOpacity
-                key={mode}
-                style={[styles.categoryButton, {
-                  backgroundColor: themeMode === mode ? colors.primary : colors.inputBackground
-                }]}
-                onPress={() => {
-                  setThemeMode(mode);
-                  setThemeModalVisible(false);
-                }}
-              >
-                <Ionicons
-                  name={
-                    mode === 'light' ? 'sunny' :
-                    mode === 'dark' ? 'moon' :
-                    'phone-portrait-outline'
-                  }
-                  size={20}
-                  color={themeMode === mode ? '#fff' : colors.text}
-                  style={{ marginRight: 8 }}
-                />
-                <Text style={[styles.categoryButtonText, {
-                  color: themeMode === mode ? '#fff' : colors.text
-                }]}>
-                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setThemeModalVisible(false)}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
         visible={calorieInfoVisible}
         transparent
         animationType="fade"
@@ -805,7 +755,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  themeToggle: {
+  profileButton: {
     position: 'absolute',
     top: 60,
     right: 20,

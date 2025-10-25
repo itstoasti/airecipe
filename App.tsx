@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,9 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 
 // Import screens
 import ApiKeySetupScreen from './screens/ApiKeySetupScreen';
+import LoginScreen from './screens/LoginScreen';
+import SignUpScreen from './screens/SignUpScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import HomeScreen from './screens/HomeScreen';
 import AllRecipesScreen from './screens/AllRecipesScreen';
 import SavedRecipesScreen from './screens/SavedRecipesScreen';
@@ -17,12 +20,14 @@ import ShoppingListScreen from './screens/ShoppingListScreen';
 import PopularRecipesScreen from './screens/PopularRecipesScreen';
 import AddRecipeScreen from './screens/AddRecipeScreen';
 import MealPlanningScreen from './screens/MealPlanningScreen';
+import ProfileScreen from './screens/ProfileScreen';
 
 // Import utilities
 import { getApiKey } from './utils/storage';
 
 // Import contexts
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Import types
 import { RootStackParamList, MainTabParamList } from './types';
@@ -88,9 +93,27 @@ function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasApiKey, setHasApiKey] = useState(false);
   const { isDark } = useTheme();
+  const { user, loading: authLoading } = useAuth();
+  const navigationRef = React.useRef<NavigationContainerRef<RootStackParamList>>(null);
 
   useEffect(() => {
     checkApiKey();
+  }, []);
+
+  // Re-check API key when user logs in
+  useEffect(() => {
+    if (user) {
+      checkApiKey();
+    }
+  }, [user]);
+
+  // Periodically check API key to handle async updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkApiKey();
+    }, 2000); // Check every 2 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   const checkApiKey = async () => {
@@ -105,7 +128,7 @@ function AppContent() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FF6B6B" />
@@ -116,20 +139,43 @@ function AppContent() {
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <NavigationContainer>
+      <NavigationContainer
+        ref={navigationRef}
+        onStateChange={() => {
+          // Re-check API key when navigation state changes
+          const currentRoute = navigationRef.current?.getCurrentRoute();
+          if (currentRoute?.name === 'ApiKeySetup' || currentRoute?.name === 'Login') {
+            checkApiKey();
+          }
+        }}
+      >
         <Stack.Navigator
           screenOptions={{
             headerShown: false,
           }}
-          initialRouteName={hasApiKey ? 'MainTabs' : 'ApiKeySetup'}
         >
-          <Stack.Screen name="ApiKeySetup" component={ApiKeySetupScreen} />
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen name="ChatToModify" component={ChatToModifyScreen} />
-          <Stack.Screen name="ShoppingList" component={ShoppingListScreen} />
-          <Stack.Screen name="PopularRecipes" component={PopularRecipesScreen} />
-          <Stack.Screen name="AddRecipe" component={AddRecipeScreen} />
-          <Stack.Screen name="MealPlanning" component={MealPlanningScreen} />
+          {!user ? (
+            // Auth Screens - shown when not logged in
+            <>
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="SignUp" component={SignUpScreen} />
+              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            </>
+          ) : !hasApiKey ? (
+            // Setup Screen - shown after login but before API key is set
+            <Stack.Screen name="ApiKeySetup" component={ApiKeySetupScreen} />
+          ) : (
+            // Main App Screens - shown when logged in and API key is set
+            <>
+              <Stack.Screen name="MainTabs" component={MainTabs} />
+              <Stack.Screen name="ChatToModify" component={ChatToModifyScreen} />
+              <Stack.Screen name="ShoppingList" component={ShoppingListScreen} />
+              <Stack.Screen name="PopularRecipes" component={PopularRecipesScreen} />
+              <Stack.Screen name="AddRecipe" component={AddRecipeScreen} />
+              <Stack.Screen name="MealPlanning" component={MealPlanningScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+            </>
+          )}
         </Stack.Navigator>
       </NavigationContainer>
     </>
@@ -140,7 +186,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AppContent />
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

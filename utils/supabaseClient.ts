@@ -15,6 +15,19 @@ export interface DatabaseRecipe {
   is_popular: boolean;
 }
 
+// Auth types
+export interface AuthUser {
+  id: string;
+  email: string;
+  created_at?: string;
+}
+
+export interface AuthSession {
+  access_token: string;
+  refresh_token: string;
+  user: AuthUser;
+}
+
 // Helper function to make Supabase REST API calls
 export const supabaseFetch = async (
   endpoint: string,
@@ -48,4 +61,135 @@ export const supabaseFetch = async (
 
   const data = await response.json();
   return data;
+};
+
+// Supabase Authentication Helper Functions
+export const supabaseAuth = {
+  // Sign up new user
+  signUp: async (email: string, password: string) => {
+    const url = `${SUPABASE_URL}/auth/v1/signup`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.msg || error.message || 'Failed to sign up');
+    }
+
+    const data = await response.json();
+    return data;
+  },
+
+  // Sign in existing user
+  signIn: async (email: string, password: string) => {
+    const url = `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.msg || error.message || 'Invalid email or password');
+    }
+
+    const data = await response.json();
+
+    return {
+      session: {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        user: {
+          id: data.user.id,
+          email: data.user.email,
+          created_at: data.user.created_at,
+        },
+      },
+    };
+  },
+
+  // Sign out user
+  signOut: async (accessToken: string) => {
+    const url = `${SUPABASE_URL}/auth/v1/logout`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || 'Failed to sign out');
+    }
+
+    return true;
+  },
+
+  // Reset password
+  resetPassword: async (email: string) => {
+    const url = `${SUPABASE_URL}/auth/v1/recover`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.msg || error.message || 'Failed to send reset email');
+    }
+
+    return true;
+  },
+
+  // Get current user
+  getUser: async (accessToken: string) => {
+    const url = `${SUPABASE_URL}/auth/v1/user`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.msg || error.message || 'Failed to get user');
+    }
+
+    const data = await response.json();
+    return {
+      id: data.id,
+      email: data.email,
+      created_at: data.created_at,
+    };
+  },
 };

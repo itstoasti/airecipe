@@ -201,16 +201,28 @@ export default function SavedRecipesScreen({ navigation }: Props) {
     navigation.navigate('AddRecipe');
   };
 
+  const handleProfile = () => {
+    navigation.navigate('Profile');
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Saved Recipes</Text>
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: colors.primary }]}
-          onPress={handleAddRecipe}
-        >
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={[styles.profileButton, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
+            onPress={handleProfile}
+          >
+            <Ionicons name="person" size={20} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.addButton, { backgroundColor: colors.primary }]}
+            onPress={handleAddRecipe}
+          >
+            <Ionicons name="add" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.categoryContainer}>
           <FlatList
@@ -354,10 +366,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 16,
   },
-  addButton: {
+  headerButtons: {
     position: 'absolute',
     top: 60,
     right: 20,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  addButton: {
     width: 40,
     height: 40,
     borderRadius: 20,

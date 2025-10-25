@@ -42,15 +42,18 @@ export default function ApiKeySetupScreen({ navigation }: Props) {
 
     try {
       await saveApiKey(apiKey.trim());
-      Alert.alert('Success', 'API key saved securely!', [
-        {
-          text: 'OK',
-          onPress: () => navigation.replace('MainTabs'),
-        },
-      ]);
+      Alert.alert('Success', 'API key saved successfully!');
+      setLoading(false);
+      // Trigger re-render by attempting navigation - app will auto-navigate to correct screen
+      setTimeout(() => {
+        try {
+          navigation.navigate('MainTabs' as any);
+        } catch (e) {
+          // Expected - MainTabs might not be available yet, app will handle navigation
+        }
+      }, 500);
     } catch (error) {
       Alert.alert('Error', 'Failed to save API key. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
