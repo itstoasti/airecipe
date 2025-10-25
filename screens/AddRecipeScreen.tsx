@@ -89,8 +89,9 @@ export default function AddRecipeScreen({ navigation }: Props) {
       Alert.alert('Error', 'Please enter a valid serving size');
       return false;
     }
-    if (!caloriesPerServing.trim() || isNaN(parseInt(caloriesPerServing))) {
-      Alert.alert('Error', 'Please enter valid calories per serving');
+    // Calories are optional - only validate if provided
+    if (caloriesPerServing.trim() && isNaN(parseInt(caloriesPerServing))) {
+      Alert.alert('Error', 'Please enter valid calories per serving or leave it blank');
       return false;
     }
     return true;
@@ -110,7 +111,7 @@ export default function AddRecipeScreen({ navigation }: Props) {
         instructions,
         estimatedTime: estimatedTime.trim(),
         servingSize: parseInt(servingSize),
-        caloriesPerServing: parseInt(caloriesPerServing),
+        caloriesPerServing: caloriesPerServing.trim() ? parseInt(caloriesPerServing) : 0,
         category,
       };
 
@@ -253,10 +254,10 @@ export default function AddRecipeScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.text }]}>Calories per Serving *</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Calories per Serving (Optional)</Text>
           <TextInput
             style={[styles.input, { backgroundColor: colors.inputBackground, color: colors.text, borderColor: colors.border }]}
-            placeholder="e.g., 350"
+            placeholder="e.g., 350 (leave blank if unknown)"
             placeholderTextColor={colors.placeholder}
             value={caloriesPerServing}
             onChangeText={setCaloriesPerServing}
