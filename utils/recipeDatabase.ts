@@ -20,6 +20,7 @@ export const saveRecipeToDatabase = async (recipe: Recipe): Promise<void> => {
       calories_per_serving: recipe.caloriesPerServing,
       view_count: 0,
       is_popular: false,
+      image_url: recipe.imageUrl || null,
     });
   } catch (error) {
     // Silently fail - don't block the user experience
@@ -50,6 +51,7 @@ export const getPopularRecipes = async (limit: number = 4, offset: number = 0): 
       estimatedTime: dbRecipe.estimated_time,
       servingSize: dbRecipe.serving_size,
       caloriesPerServing: dbRecipe.calories_per_serving,
+      imageUrl: dbRecipe.image_url,
     }));
   } catch (error) {
     console.error('Error fetching popular recipes:', error);
@@ -136,6 +138,7 @@ export const getAllRecipes = async (
       estimatedTime: dbRecipe.estimated_time,
       servingSize: dbRecipe.serving_size,
       caloriesPerServing: dbRecipe.calories_per_serving,
+      imageUrl: dbRecipe.image_url,
     }));
   } catch (error) {
     console.error('Error fetching all recipes:', error);

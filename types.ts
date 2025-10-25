@@ -7,6 +7,7 @@ export interface Recipe {
   servingSize: number;
   caloriesPerServing: number;
   category?: string;
+  imageUrl?: string;
 }
 
 export interface Message {

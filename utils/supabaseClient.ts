@@ -13,6 +13,7 @@ export interface DatabaseRecipe {
   created_at: string;
   view_count: number;
   is_popular: boolean;
+  image_url?: string;
 }
 
 // Auth types

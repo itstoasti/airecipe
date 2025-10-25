@@ -14,6 +14,7 @@ import {
   ScrollView,
   Animated,
   Keyboard,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getRecipeSuggestions } from '../utils/openaiService';
@@ -266,6 +267,14 @@ export default function HomeScreen({ navigation }: Props) {
       onPress={() => handleChatToModify(item)}
       activeOpacity={0.7}
     >
+      {item.imageUrl && (
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.recipeImage}
+          resizeMode="cover"
+        />
+      )}
+
       <View style={styles.recipeHeader}>
         <Text style={[styles.recipeTitle, { color: colors.text }]}>{item.title}</Text>
       </View>
@@ -950,6 +959,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
+    overflow: 'hidden',
+  },
+  recipeImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 12,
+    marginLeft: -16,
+    marginRight: -16,
+    marginTop: -16,
+    width: '115%',
   },
   recipeHeader: {
     marginBottom: 8,

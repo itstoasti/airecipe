@@ -15,6 +15,7 @@ import {
   Share,
   Animated,
   Keyboard,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RouteProp } from '@react-navigation/native';
@@ -237,6 +238,14 @@ export default function ChatToModifyScreen({ route, navigation }: Props) {
           <ScrollView style={[styles.recipeScrollView, { backgroundColor: colors.card }]} contentContainerStyle={styles.recipeContent}>
           {showRecipe && (
             <>
+              {recipe.imageUrl && (
+                <Image
+                  source={{ uri: recipe.imageUrl }}
+                  style={styles.recipeImage}
+                  resizeMode="cover"
+                />
+              )}
+
               <Text style={[styles.recipeTitle, { color: colors.text }]}>{recipe.title}</Text>
 
               <View style={styles.metaContainer}>
@@ -464,6 +473,13 @@ const styles = StyleSheet.create({
   },
   chatWrapper: {
     flex: 1,
+  },
+  recipeImage: {
+    width: '100%',
+    height: 250,
+    borderRadius: 12,
+    marginBottom: 16,
+    backgroundColor: '#f0f0f0',
   },
   recipeTitle: {
     fontSize: 20,

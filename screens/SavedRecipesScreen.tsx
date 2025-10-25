@@ -8,6 +8,7 @@ import {
   Alert,
   TextInput,
   Modal,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -123,6 +124,14 @@ export default function SavedRecipesScreen({ navigation }: Props) {
       onPress={() => handleViewRecipe(item)}
       activeOpacity={0.7}
     >
+      {item.imageUrl && (
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.recipeImage}
+          resizeMode="cover"
+        />
+      )}
+
       <View style={styles.recipeHeader}>
         <Text style={[styles.recipeTitle, { color: colors.text }]}>{item.title}</Text>
         <TouchableOpacity
@@ -453,6 +462,13 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
+  },
+  recipeImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#f0f0f0',
   },
   recipeHeader: {
     flexDirection: 'row',
