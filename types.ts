@@ -27,6 +27,7 @@ export type RootStackParamList = {
   AddRecipe: undefined;
   MealPlanning: undefined;
   Profile: undefined;
+  Paywall: undefined;
 };
 
 export type MainTabParamList = {

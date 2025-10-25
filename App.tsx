@@ -21,6 +21,7 @@ import PopularRecipesScreen from './screens/PopularRecipesScreen';
 import AddRecipeScreen from './screens/AddRecipeScreen';
 import MealPlanningScreen from './screens/MealPlanningScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import PaywallScreen from './screens/PaywallScreen';
 
 // Import utilities
 import { getApiKey } from './utils/storage';
@@ -28,6 +29,7 @@ import { getApiKey } from './utils/storage';
 // Import contexts
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SubscriptionProvider } from './contexts/SubscriptionContext';
 
 // Import types
 import { RootStackParamList, MainTabParamList } from './types';
@@ -174,6 +176,7 @@ function AppContent() {
               <Stack.Screen name="AddRecipe" component={AddRecipeScreen} />
               <Stack.Screen name="MealPlanning" component={MealPlanningScreen} />
               <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="Paywall" component={PaywallScreen} />
             </>
           )}
         </Stack.Navigator>
@@ -187,7 +190,9 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <AppContent />
+          <SubscriptionProvider>
+            <AppContent />
+          </SubscriptionProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
