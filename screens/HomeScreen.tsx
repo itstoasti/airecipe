@@ -14,6 +14,7 @@ import {
   ScrollView,
   Animated,
   Keyboard,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getRecipeSuggestions } from '../utils/openaiService';
@@ -47,7 +48,7 @@ const LOADING_MESSAGES = [
 ];
 
 export default function HomeScreen({ navigation }: Props) {
-  const { colors, isDark, themeMode, setThemeMode } = useTheme();
+  const { colors } = useTheme();
   const [query, setQuery] = useState('');
   const [servingSize, setServingSize] = useState(2);
   const [servingPickerVisible, setServingPickerVisible] = useState(false);
@@ -56,13 +57,14 @@ export default function HomeScreen({ navigation }: Props) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [themeModalVisible, setThemeModalVisible] = useState(false);
   const [calorieInfoVisible, setCalorieInfoVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [successVisible, setSuccessVisible] = useState(false);
   const [isIngredientsMode, setIsIngredientsMode] = useState(false);
   const [ingredientsList, setIngredientsList] = useState<string[]>([]);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [lastSearchQuery, setLastSearchQuery] = useState('');
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const dot1Anim = useRef(new Animated.Value(0)).current;
   const dot2Anim = useRef(new Animated.Value(0)).current;
@@ -144,6 +146,7 @@ export default function HomeScreen({ navigation }: Props) {
 
     setLoading(true);
     setLoadingMessage(LOADING_MESSAGES[0]);
+    setLastSearchQuery(queryToUse);
     try {
       const suggestions = await getRecipeSuggestions(queryToUse, servingSize);
       setRecipes(suggestions);
@@ -215,10 +218,9 @@ export default function HomeScreen({ navigation }: Props) {
     setLoadingMessage(LOADING_MESSAGES[0]);
     try {
       const ingredientsText = ingredientsList.join(', ');
-      const suggestions = await getRecipeSuggestions(
-        `recipes using only these ingredients: ${ingredientsText}`,
-        servingSize
-      );
+      const searchQuery = `recipes using only these ingredients: ${ingredientsText}`;
+      setLastSearchQuery(searchQuery);
+      const suggestions = await getRecipeSuggestions(searchQuery, servingSize);
       setRecipes(suggestions);
       setIngredientsList([]);
       setIsIngredientsMode(false);
@@ -236,12 +238,43 @@ export default function HomeScreen({ navigation }: Props) {
     }
   };
 
+  const handleLoadMore = async () => {
+    if (!lastSearchQuery.trim() || loadingMore) {
+      return;
+    }
+
+    setLoadingMore(true);
+    try {
+      const newSuggestions = await getRecipeSuggestions(lastSearchQuery, servingSize);
+      setRecipes((prevRecipes) => [...prevRecipes, ...newSuggestions]);
+
+      // Save new recipes to database in the background
+      newSuggestions.forEach((recipe) => {
+        saveRecipeToDatabase(recipe).catch((err) => {
+          console.error('Failed to save recipe to database:', err);
+        });
+      });
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to load more recipes');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   const renderRecipeItem = ({ item }: { item: Recipe }) => (
     <TouchableOpacity
       style={[styles.recipeCard, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => handleChatToModify(item)}
       activeOpacity={0.7}
     >
+      {item.imageUrl && (
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.recipeImage}
+          resizeMode="cover"
+        />
+      )}
+
       <View style={styles.recipeHeader}>
         <Text style={[styles.recipeTitle, { color: colors.text }]}>{item.title}</Text>
       </View>
@@ -327,11 +360,11 @@ export default function HomeScreen({ navigation }: Props) {
       keyboardVerticalOffset={0}
     >
       <TouchableOpacity
-        style={styles.themeToggle}
-        onPress={() => setThemeModalVisible(true)}
+        style={styles.profileButton}
+        onPress={() => navigation.navigate('Profile')}
       >
         <Ionicons
-          name={isDark ? 'moon' : 'sunny'}
+          name="person"
           size={24}
           color={colors.text}
         />
@@ -409,7 +442,10 @@ export default function HomeScreen({ navigation }: Props) {
         <>
           <TouchableOpacity
             style={[styles.backButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => setRecipes([])}
+            onPress={() => {
+              setRecipes([]);
+              setLastSearchQuery('');
+            }}
           >
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -418,6 +454,24 @@ export default function HomeScreen({ navigation }: Props) {
             renderItem={renderRecipeItem}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
+            ListFooterComponent={
+              <View style={styles.loadMoreContainer}>
+                <TouchableOpacity
+                  style={[styles.loadMoreButton, { backgroundColor: colors.primary }]}
+                  onPress={handleLoadMore}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="add-circle-outline" size={20} color="#fff" />
+                      <Text style={styles.loadMoreText}>Load More Recipes</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            }
           />
         </>
       )}
@@ -428,7 +482,11 @@ export default function HomeScreen({ navigation }: Props) {
           borderTopColor: colors.border,
           bottom: 72
         }]}>
-          <View style={styles.ingredientsContainer}>
+          <ScrollView
+            style={styles.ingredientsScrollView}
+            contentContainerStyle={styles.ingredientsContainer}
+            showsVerticalScrollIndicator={true}
+          >
             {ingredientsList.map((ingredient, index) => (
               <View key={index} style={[styles.ingredientChip, { backgroundColor: colors.teal }]}>
                 <Text style={styles.ingredientChipText}>{ingredient}</Text>
@@ -437,7 +495,7 @@ export default function HomeScreen({ navigation }: Props) {
                 </TouchableOpacity>
               </View>
             ))}
-          </View>
+          </ScrollView>
         </View>
       )}
 
@@ -563,55 +621,6 @@ export default function HomeScreen({ navigation }: Props) {
             <TouchableOpacity
               style={styles.cancelButton}
               onPress={() => setServingPickerVisible(false)}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={themeModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setThemeModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Choose Theme</Text>
-
-            {(['light', 'dark', 'system'] as const).map((mode) => (
-              <TouchableOpacity
-                key={mode}
-                style={[styles.categoryButton, {
-                  backgroundColor: themeMode === mode ? colors.primary : colors.inputBackground
-                }]}
-                onPress={() => {
-                  setThemeMode(mode);
-                  setThemeModalVisible(false);
-                }}
-              >
-                <Ionicons
-                  name={
-                    mode === 'light' ? 'sunny' :
-                    mode === 'dark' ? 'moon' :
-                    'phone-portrait-outline'
-                  }
-                  size={20}
-                  color={themeMode === mode ? '#fff' : colors.text}
-                  style={{ marginRight: 8 }}
-                />
-                <Text style={[styles.categoryButtonText, {
-                  color: themeMode === mode ? '#fff' : colors.text
-                }]}>
-                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setThemeModalVisible(false)}
             >
               <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
             </TouchableOpacity>
@@ -755,7 +764,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  themeToggle: {
+  profileButton: {
     position: 'absolute',
     top: 60,
     right: 20,
@@ -878,12 +887,16 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: '#eee',
-    maxHeight: 120,
+    maxHeight: 180,
+  },
+  ingredientsScrollView: {
+    maxHeight: 180,
   },
   ingredientsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    paddingBottom: 8,
   },
   ingredientChip: {
     flexDirection: 'row',
@@ -946,6 +959,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
+    overflow: 'hidden',
+  },
+  recipeImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 12,
+    marginLeft: -16,
+    marginRight: -16,
+    marginTop: -16,
+    width: '115%',
   },
   recipeHeader: {
     marginBottom: 8,
@@ -1194,5 +1218,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  loadMoreContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  loadMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    gap: 8,
+    minWidth: 200,
+  },
+  loadMoreText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

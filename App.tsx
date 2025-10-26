@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,7 +8,9 @@ import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import screens
-import ApiKeySetupScreen from './screens/ApiKeySetupScreen';
+import LoginScreen from './screens/LoginScreen';
+import SignUpScreen from './screens/SignUpScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import HomeScreen from './screens/HomeScreen';
 import AllRecipesScreen from './screens/AllRecipesScreen';
 import SavedRecipesScreen from './screens/SavedRecipesScreen';
@@ -17,12 +19,13 @@ import ShoppingListScreen from './screens/ShoppingListScreen';
 import PopularRecipesScreen from './screens/PopularRecipesScreen';
 import AddRecipeScreen from './screens/AddRecipeScreen';
 import MealPlanningScreen from './screens/MealPlanningScreen';
-
-// Import utilities
-import { getApiKey } from './utils/storage';
+import ProfileScreen from './screens/ProfileScreen';
+import PaywallScreen from './screens/PaywallScreen';
 
 // Import contexts
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SubscriptionProvider } from './contexts/SubscriptionContext';
 
 // Import types
 import { RootStackParamList, MainTabParamList } from './types';
@@ -85,27 +88,10 @@ function MainTabs() {
 }
 
 function AppContent() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasApiKey, setHasApiKey] = useState(false);
   const { isDark } = useTheme();
+  const { user, loading: authLoading } = useAuth();
 
-  useEffect(() => {
-    checkApiKey();
-  }, []);
-
-  const checkApiKey = async () => {
-    try {
-      const apiKey = await getApiKey();
-      setHasApiKey(!!apiKey);
-    } catch (error) {
-      console.error('Error checking API key:', error);
-      setHasApiKey(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isLoading) {
+  if (authLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FF6B6B" />
@@ -121,15 +107,27 @@ function AppContent() {
           screenOptions={{
             headerShown: false,
           }}
-          initialRouteName={hasApiKey ? 'MainTabs' : 'ApiKeySetup'}
         >
-          <Stack.Screen name="ApiKeySetup" component={ApiKeySetupScreen} />
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen name="ChatToModify" component={ChatToModifyScreen} />
-          <Stack.Screen name="ShoppingList" component={ShoppingListScreen} />
-          <Stack.Screen name="PopularRecipes" component={PopularRecipesScreen} />
-          <Stack.Screen name="AddRecipe" component={AddRecipeScreen} />
-          <Stack.Screen name="MealPlanning" component={MealPlanningScreen} />
+          {!user ? (
+            // Auth Screens - shown when not logged in
+            <>
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="SignUp" component={SignUpScreen} />
+              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            </>
+          ) : (
+            // Main App Screens - shown when logged in
+            <>
+              <Stack.Screen name="MainTabs" component={MainTabs} />
+              <Stack.Screen name="ChatToModify" component={ChatToModifyScreen} />
+              <Stack.Screen name="ShoppingList" component={ShoppingListScreen} />
+              <Stack.Screen name="PopularRecipes" component={PopularRecipesScreen} />
+              <Stack.Screen name="AddRecipe" component={AddRecipeScreen} />
+              <Stack.Screen name="MealPlanning" component={MealPlanningScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="Paywall" component={PaywallScreen} />
+            </>
+          )}
         </Stack.Navigator>
       </NavigationContainer>
     </>
@@ -140,7 +138,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AppContent />
+        <AuthProvider>
+          <SubscriptionProvider>
+            <AppContent />
+          </SubscriptionProvider>
+        </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

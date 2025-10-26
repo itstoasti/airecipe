@@ -8,6 +8,7 @@ import {
   Alert,
   TextInput,
   Modal,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -123,6 +124,14 @@ export default function SavedRecipesScreen({ navigation }: Props) {
       onPress={() => handleViewRecipe(item)}
       activeOpacity={0.7}
     >
+      {item.imageUrl && (
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.recipeImage}
+          resizeMode="cover"
+        />
+      )}
+
       <View style={styles.recipeHeader}>
         <Text style={[styles.recipeTitle, { color: colors.text }]}>{item.title}</Text>
         <TouchableOpacity
@@ -201,16 +210,28 @@ export default function SavedRecipesScreen({ navigation }: Props) {
     navigation.navigate('AddRecipe');
   };
 
+  const handleProfile = () => {
+    navigation.navigate('Profile');
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Saved Recipes</Text>
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: colors.primary }]}
-          onPress={handleAddRecipe}
-        >
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={[styles.profileButton, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
+            onPress={handleProfile}
+          >
+            <Ionicons name="person" size={20} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.addButton, { backgroundColor: colors.primary }]}
+            onPress={handleAddRecipe}
+          >
+            <Ionicons name="add" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.categoryContainer}>
           <FlatList
@@ -354,10 +375,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 16,
   },
-  addButton: {
+  headerButtons: {
     position: 'absolute',
     top: 60,
     right: 20,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  addButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -424,6 +462,13 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
+  },
+  recipeImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#f0f0f0',
   },
   recipeHeader: {
     flexDirection: 'row',

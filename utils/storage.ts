@@ -3,10 +3,11 @@ import * as SecureStore from 'expo-secure-store';
 import { Recipe, Message } from '../types';
 
 const API_KEY_STORAGE = 'openai_api_key';
+const FAL_API_KEY_STORAGE = 'fal_api_key';
 const RECIPES_STORAGE = 'saved_recipes';
 const CHAT_MESSAGES_STORAGE = 'chat_messages';
 
-// API Key Management
+// OpenAI API Key Management
 export const saveApiKey = async (apiKey: string): Promise<void> => {
   try {
     await SecureStore.setItemAsync(API_KEY_STORAGE, apiKey);
@@ -30,6 +31,34 @@ export const deleteApiKey = async (): Promise<void> => {
     await SecureStore.deleteItemAsync(API_KEY_STORAGE);
   } catch (error) {
     console.error('Error deleting API key:', error);
+    throw error;
+  }
+};
+
+// FAL API Key Management
+export const saveFalApiKey = async (apiKey: string): Promise<void> => {
+  try {
+    await SecureStore.setItemAsync(FAL_API_KEY_STORAGE, apiKey);
+  } catch (error) {
+    console.error('Error saving FAL API key:', error);
+    throw error;
+  }
+};
+
+export const getFalApiKey = async (): Promise<string | null> => {
+  try {
+    return await SecureStore.getItemAsync(FAL_API_KEY_STORAGE);
+  } catch (error) {
+    console.error('Error getting FAL API key:', error);
+    return null;
+  }
+};
+
+export const deleteFalApiKey = async (): Promise<void> => {
+  try {
+    await SecureStore.deleteItemAsync(FAL_API_KEY_STORAGE);
+  } catch (error) {
+    console.error('Error deleting FAL API key:', error);
     throw error;
   }
 };

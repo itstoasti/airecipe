@@ -1,16 +1,11 @@
 {
   "expo": {
-    "name": "AI Recipe App",
-    "slug": "ai-recipe-app",
+    "name": "Yummy",
+    "slug": "yummy",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "extra": {
-      "eas": {
-        "projectId": "ai-recipe-app"
-      }
-    },
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",

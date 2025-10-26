@@ -7,6 +7,7 @@ export interface Recipe {
   servingSize: number;
   caloriesPerServing: number;
   category?: string;
+  imageUrl?: string;
 }
 
 export interface Message {
@@ -16,12 +17,17 @@ export interface Message {
 
 export type RootStackParamList = {
   ApiKeySetup: undefined;
+  Login: undefined;
+  SignUp: undefined;
+  ForgotPassword: undefined;
   MainTabs: undefined;
   ChatToModify: { recipe: Recipe };
   ShoppingList: { recipe: Recipe };
   PopularRecipes: undefined;
   AddRecipe: undefined;
   MealPlanning: undefined;
+  Profile: undefined;
+  Paywall: undefined;
 };
 
 export type MainTabParamList = {

@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { Recipe, Message } from '../types';
-import { getApiKey } from './storage';
+import { getApiKey, getFalApiKey } from './storage';
+import { generateRecipeImage } from './falService';
 
 let openaiClient: OpenAI | null = null;
 
@@ -162,10 +163,31 @@ Only return the JSON array, no additional text.`;
     const recipes = JSON.parse(jsonContent);
 
     // Add unique IDs
-    return recipes.map((recipe: any, index: number) => ({
+    const recipesWithIds = recipes.map((recipe: any, index: number) => ({
       ...recipe,
       id: `recipe-${Date.now()}-${index}`,
     }));
+
+    // Generate images for recipes (if FAL API key is available)
+    const falApiKey = await getFalApiKey();
+    if (falApiKey) {
+      console.log('Generating images for recipes...');
+
+      // Generate images in parallel for better performance
+      const imagePromises = recipesWithIds.map(async (recipe) => {
+        try {
+          const imageUrl = await generateRecipeImage(recipe.title, recipe.ingredients);
+          return { ...recipe, imageUrl };
+        } catch (error) {
+          console.error(`Failed to generate image for ${recipe.title}:`, error);
+          return recipe; // Return recipe without image if generation fails
+        }
+      });
+
+      return await Promise.all(imagePromises);
+    }
+
+    return recipesWithIds;
   } catch (error) {
     console.error('Error getting recipe suggestions:', error);
     throw error;
