@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -100,7 +101,10 @@ export default function SignUpScreen({ navigation }: Props) {
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <Ionicons name="person-add" size={80} color={colors.primary} />
+          <Image
+            source={require('../assets/icon.png')}
+            style={styles.logo}
+          />
           <Text style={[styles.title, { color: colors.text }]}>Create Account</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Sign up to get started
@@ -229,6 +233,11 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 48,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    borderRadius: 20,
   },
   title: {
     fontSize: 32,

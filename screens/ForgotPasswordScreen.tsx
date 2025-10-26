@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -89,7 +90,10 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <Ionicons name="key" size={80} color={colors.primary} />
+          <Image
+            source={require('../assets/icon.png')}
+            style={styles.logo}
+          />
           <Text style={[styles.title, { color: colors.text }]}>Forgot Password</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Enter your email to receive password reset instructions
@@ -164,6 +168,11 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 48,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    borderRadius: 20,
   },
   title: {
     fontSize: 32,
