@@ -17,7 +17,7 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getRecipeSuggestions } from '../utils/openaiService';
+import { getRecipeSuggestions } from '../utils/edgeFunctionService';
 import { saveRecipe, CATEGORIES } from '../utils/storage';
 import { Recipe } from '../types';
 import { getPopularRecipes, saveRecipeToDatabase } from '../utils/recipeDatabase';
@@ -27,6 +27,9 @@ import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
+import { canGenerateRecipe, incrementRecipeGeneration } from '../utils/usageTracking';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Home'>,
@@ -49,6 +52,8 @@ const LOADING_MESSAGES = [
 
 export default function HomeScreen({ navigation }: Props) {
   const { colors } = useTheme();
+  const { session } = useAuth();
+  const { isPro } = useSubscription();
   const [query, setQuery] = useState('');
   const [servingSize, setServingSize] = useState(2);
   const [servingPickerVisible, setServingPickerVisible] = useState(false);
@@ -148,8 +153,30 @@ export default function HomeScreen({ navigation }: Props) {
     setLoadingMessage(LOADING_MESSAGES[0]);
     setLastSearchQuery(queryToUse);
     try {
-      const suggestions = await getRecipeSuggestions(queryToUse, servingSize);
+      if (!session?.access_token) {
+        throw new Error('You must be logged in to generate recipes');
+      }
+
+      // Check usage limits for free tier
+      const canGenerate = await canGenerateRecipe(isPro);
+      if (!canGenerate) {
+        setLoading(false);
+        Alert.alert(
+          'Daily Limit Reached',
+          'You\'ve reached your daily limit of 3 recipe generations. Upgrade to Pro for unlimited recipes!',
+          [
+            { text: 'Maybe Later', style: 'cancel' },
+            { text: 'Upgrade to Pro', onPress: () => navigation.navigate('Paywall') }
+          ]
+        );
+        return;
+      }
+
+      const suggestions = await getRecipeSuggestions(queryToUse, servingSize, session.access_token);
       setRecipes(suggestions);
+
+      // Increment usage count after successful generation
+      await incrementRecipeGeneration();
 
       // Save recipes to database in the background
       suggestions.forEach((recipe) => {
@@ -174,13 +201,25 @@ export default function HomeScreen({ navigation }: Props) {
 
     try {
       const recipeToSave = { ...selectedRecipe, category };
-      await saveRecipe(recipeToSave);
+      await saveRecipe(recipeToSave, isPro);
       setModalVisible(false);
       setSuccessMessage(`Recipe saved to ${category}!`);
       setSuccessVisible(true);
       setTimeout(() => setSuccessVisible(false), 2000);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to save recipe');
+    } catch (error: any) {
+      setModalVisible(false);
+      if (error.message?.includes('Free tier limit')) {
+        Alert.alert(
+          'Storage Limit Reached',
+          'You\'ve saved 10 recipes (free limit). Upgrade to Pro for unlimited storage or delete some recipes.',
+          [
+            { text: 'Delete Recipes', onPress: () => navigation.navigate('AllRecipes') },
+            { text: 'Upgrade to Pro', onPress: () => navigation.navigate('Paywall') }
+          ]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to save recipe');
+      }
     }
   };
 
@@ -217,11 +256,34 @@ export default function HomeScreen({ navigation }: Props) {
     setLoading(true);
     setLoadingMessage(LOADING_MESSAGES[0]);
     try {
+      if (!session?.access_token) {
+        throw new Error('You must be logged in to generate recipes');
+      }
+
+      // Check usage limits for free tier
+      const canGenerate = await canGenerateRecipe(isPro);
+      if (!canGenerate) {
+        setLoading(false);
+        Alert.alert(
+          'Daily Limit Reached',
+          'You\'ve reached your daily limit of 3 recipe generations. Upgrade to Pro for unlimited recipes!',
+          [
+            { text: 'Maybe Later', style: 'cancel' },
+            { text: 'Upgrade to Pro', onPress: () => navigation.navigate('Paywall') }
+          ]
+        );
+        return;
+      }
+
       const ingredientsText = ingredientsList.join(', ');
       const searchQuery = `recipes using only these ingredients: ${ingredientsText}`;
       setLastSearchQuery(searchQuery);
-      const suggestions = await getRecipeSuggestions(searchQuery, servingSize);
+      const suggestions = await getRecipeSuggestions(searchQuery, servingSize, session.access_token);
       setRecipes(suggestions);
+
+      // Increment usage count after successful generation
+      await incrementRecipeGeneration();
+
       setIngredientsList([]);
       setIsIngredientsMode(false);
 
@@ -245,8 +307,30 @@ export default function HomeScreen({ navigation }: Props) {
 
     setLoadingMore(true);
     try {
-      const newSuggestions = await getRecipeSuggestions(lastSearchQuery, servingSize);
+      if (!session?.access_token) {
+        throw new Error('You must be logged in to generate recipes');
+      }
+
+      // Check usage limits for free tier
+      const canGenerate = await canGenerateRecipe(isPro);
+      if (!canGenerate) {
+        setLoadingMore(false);
+        Alert.alert(
+          'Daily Limit Reached',
+          'You\'ve reached your daily limit of 3 recipe generations. Upgrade to Pro for unlimited recipes!',
+          [
+            { text: 'Maybe Later', style: 'cancel' },
+            { text: 'Upgrade to Pro', onPress: () => navigation.navigate('Paywall') }
+          ]
+        );
+        return;
+      }
+
+      const newSuggestions = await getRecipeSuggestions(lastSearchQuery, servingSize, session.access_token);
       setRecipes((prevRecipes) => [...prevRecipes, ...newSuggestions]);
+
+      // Increment usage count after successful generation
+      await incrementRecipeGeneration();
 
       // Save new recipes to database in the background
       newSuggestions.forEach((recipe) => {

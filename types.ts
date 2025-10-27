@@ -16,6 +16,7 @@ export interface Message {
 }
 
 export type RootStackParamList = {
+  Onboarding: undefined;
   ApiKeySetup: undefined;
   Login: undefined;
   SignUp: undefined;

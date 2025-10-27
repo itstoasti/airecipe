@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Data - Yummy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            min-height: 100vh;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+            border-bottom: 2px solid #FF6B6B;
+        }
+        h1 {
+            color: #FF6B6B;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .app-name {
+            font-size: 1.2em;
+            color: #666;
+        }
+        .content {
+            padding: 40px 0;
+        }
+        h2 {
+            color: #FF6B6B;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        h3 {
+            color: #333;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        p {
+            margin-bottom: 15px;
+            color: #555;
+        }
+        ul {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+        li {
+            margin-bottom: 8px;
+            color: #555;
+        }
+        .info-box {
+            background: #d1ecf1;
+            border-left: 4px solid #0c5460;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        .steps {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .steps ol {
+            margin-left: 20px;
+        }
+        .steps li {
+            margin-bottom: 15px;
+            padding-left: 10px;
+        }
+        .data-types {
+            display: grid;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .data-type {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #FF6B6B;
+        }
+        .data-type h4 {
+            color: #FF6B6B;
+            margin-bottom: 8px;
+        }
+        .contact {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        .contact a {
+            color: #FF6B6B;
+            text-decoration: none;
+        }
+        .contact a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Delete Your Data</h1>
+            <div class="app-name">Yummy - AI Recipe Generator</div>
+        </header>
+
+        <div class="content">
+            <h2>Data Deletion Request</h2>
+            <p>You can delete your personal data while keeping your Yummy account active. This allows you to start fresh while maintaining your account and subscription.</p>
+
+            <div class="info-box">
+                <p style="margin-bottom: 0;"><strong>Note:</strong> This option deletes your data but keeps your account. If you want to delete both your account and all data, please visit our <a href="delete-account.html" style="color: #0c5460; text-decoration: underline;">Account Deletion page</a>.</p>
+            </div>
+
+            <h2>What Data Can Be Deleted?</h2>
+            <p>You have control over the following data types:</p>
+
+            <div class="data-types">
+                <div class="data-type">
+                    <h4>Saved Recipes</h4>
+                    <p style="margin-bottom: 0;">All recipes you've saved to your collection. You can delete individual recipes or all of them.</p>
+                </div>
+
+                <div class="data-type">
+                    <h4>Recipe Generation History</h4>
+                    <p style="margin-bottom: 0;">Your history of generated recipes and AI interactions.</p>
+                </div>
+
+                <div class="data-type">
+                    <h4>Shopping Lists</h4>
+                    <p style="margin-bottom: 0;">All shopping lists you've created from recipes.</p>
+                </div>
+
+                <div class="data-type">
+                    <h4>Usage Data</h4>
+                    <p style="margin-bottom: 0;">App usage statistics and preferences (excluding necessary account data).</p>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Warning:</strong> Deleting your data is permanent and cannot be undone. Make sure to export or save any recipes you want to keep before proceeding.
+            </div>
+
+            <h2>How to Delete Your Data</h2>
+
+            <h3>Option 1: Delete Specific Data in the App</h3>
+            <div class="steps">
+                <p><strong>To delete individual recipes:</strong></p>
+                <ol>
+                    <li>Open the Yummy app</li>
+                    <li>Go to <strong>Saved Recipes</strong></li>
+                    <li>Swipe left on any recipe</li>
+                    <li>Tap <strong>Delete</strong></li>
+                </ol>
+
+                <p style="margin-top: 20px;"><strong>To delete all saved recipes:</strong></p>
+                <ol>
+                    <li>Go to your <strong>Profile</strong></li>
+                    <li>Tap <strong>Settings</strong></li>
+                    <li>Scroll to <strong>Data Management</strong></li>
+                    <li>Tap <strong>"Clear All Saved Recipes"</strong></li>
+                    <li>Confirm your decision</li>
+                </ol>
+            </div>
+
+            <h3>Option 2: Request Complete Data Deletion</h3>
+            <div class="steps">
+                <p>To delete all your data while keeping your account, send an email to:</p>
+                <p style="margin-top: 15px;"><strong>Email:</strong> <a href="mailto:support@yummyapp.com">support@yummyapp.com</a></p>
+                <p style="margin-top: 10px;">Please include:</p>
+                <ul style="margin-top: 10px;">
+                    <li>The email address associated with your account</li>
+                    <li>Subject line: "Data Deletion Request"</li>
+                    <li>Specify which data you want deleted</li>
+                    <li>Confirm you want to keep your account active</li>
+                </ul>
+                <p style="color: #666; font-size: 0.9em; margin-top: 15px;">We will process your request within 30 days and send you a confirmation email.</p>
+            </div>
+
+            <h2>What Happens After Data Deletion?</h2>
+            <ul>
+                <li>Your selected data will be permanently deleted from our servers within 30 days</li>
+                <li>Your account will remain active</li>
+                <li>Your subscription status will not be affected</li>
+                <li>You can continue using the app and generating new recipes</li>
+                <li>Some anonymized data may be retained for legal compliance or analytics</li>
+            </ul>
+
+            <h2>Data That Cannot Be Deleted (While Keeping Account)</h2>
+            <p>The following data is required to maintain your account and cannot be deleted separately:</p>
+            <ul>
+                <li>Email address (account identifier)</li>
+                <li>Account creation date</li>
+                <li>Subscription status and payment history (managed by Google Play)</li>
+            </ul>
+            <p>To delete this data, you must delete your entire account. Visit our <a href="delete-account.html" style="color: #FF6B6B;">Account Deletion page</a> for more information.</p>
+
+            <div class="contact">
+                <h2 style="margin-top: 0;">Need Help?</h2>
+                <p>If you have questions about data deletion or need assistance, please contact us:</p>
+                <p style="margin-top: 10px;"><strong>Email:</strong> <a href="mailto:support@yummyapp.com">support@yummyapp.com</a></p>
+                <p style="margin-top: 10px;">We typically respond within 24-48 hours.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

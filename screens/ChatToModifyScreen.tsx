@@ -21,9 +21,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Recipe, Message } from '../types';
-import { chatWithChef } from '../utils/openaiService';
+import { chatWithChef } from '../utils/edgeFunctionService';
 import { saveRecipe, updateRecipe, CATEGORIES, saveChatMessages, getChatMessages } from '../utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 
 type ChatToModifyScreenRouteProp = RouteProp<RootStackParamList, 'ChatToModify'>;
 type ChatToModifyScreenNavigationProp = StackNavigationProp<
@@ -86,6 +88,8 @@ function TypingIndicator() {
 
 export default function ChatToModifyScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
+  const { session } = useAuth();
+  const { isPro } = useSubscription();
   const { recipe: initialRecipe } = route.params;
   const [recipe, setRecipe] = useState<Recipe>(initialRecipe);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -120,10 +124,14 @@ export default function ChatToModifyScreen({ route, navigation }: Props) {
     setLoading(true);
 
     try {
+      if (!session?.access_token) {
+        throw new Error('You must be logged in to chat with the chef');
+      }
       const { response, updatedRecipe } = await chatWithChef(
         recipe,
         messages,
-        inputText
+        inputText,
+        session.access_token
       );
 
       const assistantMessage: Message = { role: 'assistant', content: response };
@@ -143,7 +151,7 @@ export default function ChatToModifyScreen({ route, navigation }: Props) {
   const handleSaveRecipe = async () => {
     try {
       if (recipe.category) {
-        // Update existing recipe
+        // Update existing recipe (no limit check needed for updates)
         await updateRecipe(recipe);
         setSuccessMessage('Recipe updated successfully!');
         setSuccessVisible(true);
@@ -152,21 +160,44 @@ export default function ChatToModifyScreen({ route, navigation }: Props) {
         // Save new recipe - show modal
         setSaveCategoryModalVisible(true);
       }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to save recipe');
+    } catch (error: any) {
+      if (error.message?.includes('Free tier limit')) {
+        Alert.alert(
+          'Storage Limit Reached',
+          'You\'ve saved 10 recipes (free limit). Upgrade to Pro for unlimited storage or delete some recipes.',
+          [
+            { text: 'Delete Recipes', onPress: () => navigation.navigate('AllRecipes') },
+            { text: 'Upgrade to Pro', onPress: () => navigation.navigate('Paywall') }
+          ]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to save recipe');
+      }
     }
   };
 
   const saveRecipeWithCategory = async (category: string) => {
     try {
       const recipeToSave = { ...recipe, category };
-      await saveRecipe(recipeToSave);
+      await saveRecipe(recipeToSave, isPro);
       setSaveCategoryModalVisible(false);
       setSuccessMessage(`Recipe saved to ${category}!`);
       setSuccessVisible(true);
       setTimeout(() => setSuccessVisible(false), 2000);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to save recipe');
+    } catch (error: any) {
+      setSaveCategoryModalVisible(false);
+      if (error.message?.includes('Free tier limit')) {
+        Alert.alert(
+          'Storage Limit Reached',
+          'You\'ve saved 10 recipes (free limit). Upgrade to Pro for unlimited storage or delete some recipes.',
+          [
+            { text: 'Delete Recipes', onPress: () => navigation.navigate('AllRecipes') },
+            { text: 'Upgrade to Pro', onPress: () => navigation.navigate('Paywall') }
+          ]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to save recipe');
+      }
     }
   };
 

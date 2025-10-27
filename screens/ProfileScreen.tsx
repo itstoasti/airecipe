@@ -6,15 +6,15 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  TextInput,
-  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { getApiKey, saveApiKey, deleteApiKey, getFalApiKey, saveFalApiKey, deleteFalApiKey } from '../utils/storage';
+import { useSubscription } from '../contexts/SubscriptionContext';
+import { getUsageStats, FREE_TIER_LIMITS } from '../utils/usageTracking';
+import { getSavedRecipesCount } from '../utils/storage';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -25,125 +25,23 @@ interface Props {
 export default function ProfileScreen({ navigation }: Props) {
   const { colors, isDark, setThemeMode, themeMode } = useTheme();
   const { user, signOut } = useAuth();
-  const [openaiApiKey, setOpenaiApiKeyState] = useState('');
-  const [hasOpenaiApiKey, setHasOpenaiApiKey] = useState(false);
-  const [showOpenaiKey, setShowOpenaiKey] = useState(false);
-  const [falApiKey, setFalApiKeyState] = useState('');
-  const [hasFalApiKey, setHasFalApiKey] = useState(false);
-  const [showFalKey, setShowFalKey] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const { isPro, customerInfo } = useSubscription();
+  const [recipesGeneratedToday, setRecipesGeneratedToday] = useState(0);
+  const [savedRecipesCount, setSavedRecipesCount] = useState(0);
 
   useEffect(() => {
-    loadOpenaiApiKey();
-    loadFalApiKey();
+    loadUsageStats();
   }, []);
 
-  const loadOpenaiApiKey = async () => {
+  const loadUsageStats = async () => {
     try {
-      const key = await getApiKey();
-      if (key) {
-        setOpenaiApiKeyState(key);
-        setHasOpenaiApiKey(true);
-      }
+      const usage = await getUsageStats();
+      const savedCount = await getSavedRecipesCount();
+      setRecipesGeneratedToday(usage.recipesGeneratedToday);
+      setSavedRecipesCount(savedCount);
     } catch (error) {
-      console.error('Error loading OpenAI API key:', error);
+      console.error('Error loading usage stats:', error);
     }
-  };
-
-  const loadFalApiKey = async () => {
-    try {
-      const key = await getFalApiKey();
-      if (key) {
-        setFalApiKeyState(key);
-        setHasFalApiKey(true);
-      }
-    } catch (error) {
-      console.error('Error loading FAL API key:', error);
-    }
-  };
-
-  const handleSaveOpenaiApiKey = async () => {
-    if (!openaiApiKey.trim()) {
-      Alert.alert('Error', 'Please enter an OpenAI API key');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await saveApiKey(openaiApiKey.trim());
-      setHasOpenaiApiKey(true);
-      Alert.alert('Success', 'OpenAI API key saved successfully!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to save OpenAI API key');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleRemoveOpenaiApiKey = () => {
-    Alert.alert(
-      'Remove OpenAI API Key',
-      'Are you sure you want to remove your OpenAI API key? You will need to add it again to use recipe generation.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteApiKey();
-              setOpenaiApiKeyState('');
-              setHasOpenaiApiKey(false);
-              Alert.alert('Success', 'OpenAI API key removed');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to remove OpenAI API key');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleSaveFalApiKey = async () => {
-    if (!falApiKey.trim()) {
-      Alert.alert('Error', 'Please enter a FAL API key');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await saveFalApiKey(falApiKey.trim());
-      setHasFalApiKey(true);
-      Alert.alert('Success', 'FAL API key saved! Recipe images will now be generated automatically.');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to save FAL API key');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleRemoveFalApiKey = () => {
-    Alert.alert(
-      'Remove FAL API Key',
-      'Are you sure you want to remove your FAL API key? Recipe images will no longer be generated.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteFalApiKey();
-              setFalApiKeyState('');
-              setHasFalApiKey(false);
-              Alert.alert('Success', 'FAL API key removed');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to remove FAL API key');
-            }
-          },
-        },
-      ]
-    );
   };
 
   const handleSignOut = () => {
@@ -195,6 +93,95 @@ export default function ProfileScreen({ navigation }: Props) {
           <Text style={[styles.memberSince, { color: colors.textSecondary }]}>
             Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
           </Text>
+        </View>
+
+        {/* Subscription Section */}
+        <View style={styles.settingsSection}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Subscription</Text>
+          <View style={[styles.settingCard, { backgroundColor: colors.card }]}>
+            <View style={styles.subscriptionHeader}>
+              <View>
+                <Text style={[styles.subscriptionStatus, { color: colors.text }]}>
+                  {isPro ? 'Pro Member ✨' : 'Free Plan'}
+                </Text>
+                <Text style={[styles.subscriptionDetail, { color: colors.textSecondary }]}>
+                  {isPro
+                    ? 'You have access to all premium features'
+                    : 'Upgrade to unlock unlimited recipes'}
+                </Text>
+              </View>
+              {isPro && (
+                <View style={[styles.proBadge, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.proBadgeText}>PRO</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Usage Stats */}
+            <View style={[styles.usageSection, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
+              <View style={styles.usageRow}>
+                <View style={styles.usageItem}>
+                  <Ionicons name="restaurant-outline" size={20} color={colors.primary} />
+                  <View style={styles.usageTextContainer}>
+                    <Text style={[styles.usageLabel, { color: colors.textSecondary }]}>Recipes Today</Text>
+                    <Text style={[styles.usageValue, { color: colors.text }]}>
+                      {isPro
+                        ? 'Unlimited ♾️'
+                        : `${recipesGeneratedToday}/${FREE_TIER_LIMITS.DAILY_RECIPE_GENERATIONS}`}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.usageItem}>
+                  <Ionicons name="bookmark-outline" size={20} color={colors.teal} />
+                  <View style={styles.usageTextContainer}>
+                    <Text style={[styles.usageLabel, { color: colors.textSecondary }]}>Saved Recipes</Text>
+                    <Text style={[styles.usageValue, { color: colors.text }]}>
+                      {isPro
+                        ? `${savedRecipesCount} (Unlimited)`
+                        : `${savedRecipesCount}/${FREE_TIER_LIMITS.MAX_SAVED_RECIPES}`}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              {!isPro && recipesGeneratedToday >= FREE_TIER_LIMITS.DAILY_RECIPE_GENERATIONS && (
+                <View style={[styles.limitWarning, { backgroundColor: colors.background }]}>
+                  <Ionicons name="alert-circle" size={16} color={colors.primary} />
+                  <Text style={[styles.limitWarningText, { color: colors.primary }]}>
+                    Daily limit reached. Resets tomorrow.
+                  </Text>
+                </View>
+              )}
+              {!isPro && savedRecipesCount >= FREE_TIER_LIMITS.MAX_SAVED_RECIPES && (
+                <View style={[styles.limitWarning, { backgroundColor: colors.background }]}>
+                  <Ionicons name="alert-circle" size={16} color={colors.primary} />
+                  <Text style={[styles.limitWarningText, { color: colors.primary }]}>
+                    Storage limit reached. Delete recipes to save more.
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {!isPro && (
+              <TouchableOpacity
+                style={[styles.upgradeButton, { backgroundColor: colors.primary }]}
+                onPress={() => navigation.navigate('Paywall')}
+              >
+                <Text style={styles.upgradeButtonText}>Upgrade to Pro</Text>
+                <Ionicons name="arrow-forward" size={20} color="#fff" />
+              </TouchableOpacity>
+            )}
+
+            {__DEV__ && (
+              <View style={[styles.debugInfo, { backgroundColor: colors.inputBackground, marginTop: 12 }]}>
+                <Text style={[styles.debugText, { color: colors.textSecondary }]}>
+                  Debug: isPro = {isPro ? 'true' : 'false'}
+                </Text>
+                <Text style={[styles.debugText, { color: colors.textSecondary }]}>
+                  Active entitlements: {customerInfo?.entitlements?.active ? Object.keys(customerInfo.entitlements.active).join(', ') || 'none' : 'none'}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Theme Section */}
@@ -278,146 +265,6 @@ export default function ProfileScreen({ navigation }: Props) {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-
-        {/* OpenAI API Key Section */}
-        <View style={styles.settingsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>OpenAI API Key (Required)</Text>
-          <View style={[styles.settingCard, { backgroundColor: colors.card }]}>
-            <View style={styles.apiKeyInfo}>
-              <Ionicons name="key-outline" size={24} color={colors.primary} />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={[styles.settingLabel, { color: colors.text }]}>OpenAI API Key</Text>
-                <Text style={[styles.apiKeyDescription, { color: colors.textSecondary }]}>
-                  {hasOpenaiApiKey
-                    ? 'API key configured. Recipe generation is enabled.'
-                    : 'Add OpenAI API key to generate recipes'}
-                </Text>
-              </View>
-            </View>
-
-            {!hasOpenaiApiKey ? (
-              <>
-                <View style={[styles.inputContainer, { marginTop: 12 }]}>
-                  <TextInput
-                    style={[styles.apiKeyInput, { backgroundColor: colors.inputBackground, color: colors.text, borderColor: colors.border }]}
-                    placeholder="Enter OpenAI API key..."
-                    placeholderTextColor={colors.placeholder}
-                    value={openaiApiKey}
-                    onChangeText={setOpenaiApiKeyState}
-                    secureTextEntry={!showOpenaiKey}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeIcon}
-                    onPress={() => setShowOpenaiKey(!showOpenaiKey)}
-                  >
-                    <Ionicons
-                      name={showOpenaiKey ? 'eye-outline' : 'eye-off-outline'}
-                      size={20}
-                      color={colors.textSecondary}
-                    />
-                  </TouchableOpacity>
-                </View>
-                <TouchableOpacity
-                  style={[styles.saveKeyButton, { backgroundColor: colors.primary }]}
-                  onPress={handleSaveOpenaiApiKey}
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <>
-                      <Ionicons name="save-outline" size={18} color="#fff" />
-                      <Text style={styles.saveKeyButtonText}>Save API Key</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-                <Text style={[styles.helpText, { color: colors.placeholder }]}>
-                  Get your API key at platform.openai.com/api-keys
-                </Text>
-              </>
-            ) : (
-              <TouchableOpacity
-                style={[styles.removeKeyButton, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
-                onPress={handleRemoveOpenaiApiKey}
-              >
-                <Ionicons name="trash-outline" size={18} color={colors.primary} />
-                <Text style={[styles.removeKeyButtonText, { color: colors.primary }]}>Remove API Key</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* FAL API Key Section */}
-        <View style={styles.settingsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recipe Images (Optional)</Text>
-          <View style={[styles.settingCard, { backgroundColor: colors.card }]}>
-            <View style={styles.apiKeyInfo}>
-              <Ionicons name="image-outline" size={24} color={colors.primary} />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={[styles.settingLabel, { color: colors.text }]}>FAL.ai API Key</Text>
-                <Text style={[styles.apiKeyDescription, { color: colors.textSecondary }]}>
-                  {hasFalApiKey
-                    ? 'API key configured. Images will be generated for recipes.'
-                    : 'Add FAL API key to generate recipe images automatically'}
-                </Text>
-              </View>
-            </View>
-
-            {!hasFalApiKey ? (
-              <>
-                <View style={[styles.inputContainer, { marginTop: 12 }]}>
-                  <TextInput
-                    style={[styles.apiKeyInput, { backgroundColor: colors.inputBackground, color: colors.text, borderColor: colors.border }]}
-                    placeholder="Enter FAL API key..."
-                    placeholderTextColor={colors.placeholder}
-                    value={falApiKey}
-                    onChangeText={setFalApiKeyState}
-                    secureTextEntry={!showFalKey}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeIcon}
-                    onPress={() => setShowFalKey(!showFalKey)}
-                  >
-                    <Ionicons
-                      name={showFalKey ? 'eye-outline' : 'eye-off-outline'}
-                      size={20}
-                      color={colors.textSecondary}
-                    />
-                  </TouchableOpacity>
-                </View>
-                <TouchableOpacity
-                  style={[styles.saveKeyButton, { backgroundColor: colors.primary }]}
-                  onPress={handleSaveFalApiKey}
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <>
-                      <Ionicons name="save-outline" size={18} color="#fff" />
-                      <Text style={styles.saveKeyButtonText}>Save API Key</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-                <Text style={[styles.helpText, { color: colors.placeholder }]}>
-                  Get your free API key at fal.ai/dashboard
-                </Text>
-              </>
-            ) : (
-              <TouchableOpacity
-                style={[styles.removeKeyButton, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
-                onPress={handleRemoveFalApiKey}
-              >
-                <Ionicons name="trash-outline" size={18} color={colors.primary} />
-                <Text style={[styles.removeKeyButtonText, { color: colors.primary }]}>Remove API Key</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
 
@@ -523,66 +370,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  apiKeyInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  apiKeyDescription: {
-    fontSize: 13,
-    marginTop: 4,
-    lineHeight: 18,
-  },
-  inputContainer: {
-    position: 'relative',
-  },
-  apiKeyInput: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    paddingRight: 48,
-    borderRadius: 8,
-    fontSize: 14,
-    borderWidth: 1,
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: 16,
-    top: 12,
-  },
-  saveKeyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 12,
-    gap: 8,
-  },
-  saveKeyButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  removeKeyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 12,
-    gap: 8,
-    borderWidth: 1,
-  },
-  removeKeyButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  helpText: {
-    fontSize: 12,
-    marginTop: 8,
-    textAlign: 'center',
-  },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -600,5 +387,89 @@ const styles = StyleSheet.create({
   },
   appInfoText: {
     fontSize: 12,
+  },
+  subscriptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  subscriptionStatus: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  subscriptionDetail: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  proBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  proBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  upgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  upgradeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  debugInfo: {
+    padding: 12,
+    borderRadius: 8,
+  },
+  debugText: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+  },
+  usageSection: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  usageRow: {
+    gap: 12,
+  },
+  usageItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  usageTextContainer: {
+    flex: 1,
+  },
+  usageLabel: {
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  usageValue: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  limitWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  limitWarningText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });

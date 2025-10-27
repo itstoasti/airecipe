@@ -1,4 +1,4 @@
-import { getFalApiKey } from './storage';
+import { getFALKey } from './apiKeyService';
 
 // FAL API base URL - using the synchronous endpoint for simpler implementation
 const FAL_API_URL = 'https://fal.run/fal-ai/nano-banana';
@@ -6,10 +6,11 @@ const FAL_API_URL = 'https://fal.run/fal-ai/nano-banana';
 // Generate image for a recipe using FAL REST API
 export const generateRecipeImage = async (
   recipeTitle: string,
-  ingredients: string[]
+  ingredients: string[],
+  accessToken: string
 ): Promise<string | null> => {
   try {
-    const apiKey = await getFalApiKey();
+    const apiKey = await getFALKey(accessToken);
     if (!apiKey) {
       console.warn('No FAL API key configured');
       return null;
@@ -61,9 +62,9 @@ export const generateRecipeImage = async (
 };
 
 // Generate image with custom prompt
-export const generateCustomImage = async (prompt: string): Promise<string | null> => {
+export const generateCustomImage = async (prompt: string, accessToken: string): Promise<string | null> => {
   try {
-    const apiKey = await getFalApiKey();
+    const apiKey = await getFALKey(accessToken);
     if (!apiKey) {
       console.warn('No FAL API key configured');
       return null;

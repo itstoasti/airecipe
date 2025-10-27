@@ -62,20 +62,15 @@ export default function SignUpScreen({ navigation }: Props) {
 
     setLoading(true);
     try {
+      console.log('Starting signup...');
       await signUp(email, password);
-      Alert.alert(
-        'Success',
-        'Account created successfully! You can now sign in.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Login'),
-          },
-        ]
-      );
+      console.log('Signup successful!');
+      // Don't navigate manually - App.tsx will automatically show Paywall
+      // when user is logged in and justSignedUp is true
+      setLoading(false);
     } catch (error: any) {
+      console.error('Signup error:', error);
       Alert.alert('Sign Up Failed', error.message || 'Failed to create account');
-    } finally {
       setLoading(false);
     }
   };

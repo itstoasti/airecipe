@@ -1,15 +1,15 @@
 import OpenAI from 'openai';
 import { Recipe, Message } from '../types';
-import { getApiKey, getFalApiKey } from './storage';
+import { getOpenAIKey } from './apiKeyService';
 import { generateRecipeImage } from './falService';
 
 let openaiClient: OpenAI | null = null;
 
-export const initializeOpenAI = async (): Promise<OpenAI> => {
-  const apiKey = await getApiKey();
+export const initializeOpenAI = async (accessToken: string): Promise<OpenAI> => {
+  const apiKey = await getOpenAIKey(accessToken);
 
   if (!apiKey) {
-    throw new Error('API key not found. Please set up your OpenAI API key.');
+    throw new Error('API key not found. Please contact support.');
   }
 
   openaiClient = new OpenAI({
@@ -19,9 +19,9 @@ export const initializeOpenAI = async (): Promise<OpenAI> => {
   return openaiClient;
 };
 
-export const getRecipeSuggestions = async (query: string, servingSize: number = 4): Promise<Recipe[]> => {
+export const getRecipeSuggestions = async (query: string, servingSize: number = 4, accessToken: string): Promise<Recipe[]> => {
   try {
-    const client = await initializeOpenAI();
+    const client = await initializeOpenAI(accessToken);
 
     const prompt = `You are a professional chef assistant and nutrition expert. A user wants recipe suggestions for: "${query}" that serves ${servingSize} people.
 
@@ -168,26 +168,19 @@ Only return the JSON array, no additional text.`;
       id: `recipe-${Date.now()}-${index}`,
     }));
 
-    // Generate images for recipes (if FAL API key is available)
-    const falApiKey = await getFalApiKey();
-    if (falApiKey) {
-      console.log('Generating images for recipes...');
+    // Generate images for recipes
+    console.log('Generating images for recipes...');
+    const imagePromises = recipesWithIds.map(async (recipe) => {
+      try {
+        const imageUrl = await generateRecipeImage(recipe.title, recipe.ingredients, accessToken);
+        return { ...recipe, imageUrl };
+      } catch (error) {
+        console.error(`Failed to generate image for ${recipe.title}:`, error);
+        return recipe; // Return recipe without image if generation fails
+      }
+    });
 
-      // Generate images in parallel for better performance
-      const imagePromises = recipesWithIds.map(async (recipe) => {
-        try {
-          const imageUrl = await generateRecipeImage(recipe.title, recipe.ingredients);
-          return { ...recipe, imageUrl };
-        } catch (error) {
-          console.error(`Failed to generate image for ${recipe.title}:`, error);
-          return recipe; // Return recipe without image if generation fails
-        }
-      });
-
-      return await Promise.all(imagePromises);
-    }
-
-    return recipesWithIds;
+    return await Promise.all(imagePromises);
   } catch (error) {
     console.error('Error getting recipe suggestions:', error);
     throw error;
@@ -197,10 +190,11 @@ Only return the JSON array, no additional text.`;
 export const chatWithChef = async (
   recipe: Recipe,
   messages: Message[],
-  userMessage: string
+  userMessage: string,
+  accessToken: string
 ): Promise<{ response: string; updatedRecipe: Recipe }> => {
   try {
-    const client = await initializeOpenAI();
+    const client = await initializeOpenAI(accessToken);
 
     const systemPrompt = `You're a friendly professional chef helping with this recipe. Be warm, helpful, and concise.
 

@@ -26,6 +26,28 @@ export default function PaywallScreen({ navigation }: Props) {
   const [purchasing, setPurchasing] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<'monthly' | 'yearly'>('yearly');
 
+  // Get packages from offerings
+  const monthlyPackage = offerings?.availablePackages.find((pkg) =>
+    pkg.identifier.includes('monthly')
+  );
+  const yearlyPackage = offerings?.availablePackages.find((pkg) =>
+    pkg.identifier.includes('annual') || pkg.identifier.includes('yearly')
+  );
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('Paywall: Offerings loaded:', !!offerings);
+    console.log('Paywall: Available packages:', offerings?.availablePackages?.length || 0);
+    console.log('Paywall: Monthly package found:', !!monthlyPackage);
+    console.log('Paywall: Yearly package found:', !!yearlyPackage);
+    if (monthlyPackage) {
+      console.log('Paywall: Monthly price:', monthlyPackage.product.priceString);
+    }
+    if (yearlyPackage) {
+      console.log('Paywall: Yearly price:', yearlyPackage.product.priceString);
+    }
+  }, [offerings, monthlyPackage, yearlyPackage]);
+
   const handlePurchase = async () => {
     if (!offerings || !offerings.availablePackages) {
       Alert.alert('Error', 'No subscription packages available. Please try again later.');
@@ -39,15 +61,32 @@ export default function PaywallScreen({ navigation }: Props) {
       );
 
       if (packageToPurchase) {
-        await purchasePackage(packageToPurchase);
-        Alert.alert('Success!', 'Welcome to AI Recipe Pro! 🎉', [
-          { text: 'Get Started', onPress: () => navigation.goBack() },
-        ]);
+        try {
+          await purchasePackage(packageToPurchase);
+          // Only show success if purchase actually succeeded
+          Alert.alert('Success!', 'Welcome to Yummy Pro! 🎉', [
+            { text: 'Get Started', onPress: () => navigation.goBack() },
+          ]);
+        } catch (purchaseError: any) {
+          // Re-throw to be caught by outer catch
+          throw purchaseError;
+        }
       } else {
         Alert.alert('Error', 'Selected package not found.');
       }
     } catch (error: any) {
-      Alert.alert('Purchase Failed', error.message || 'An error occurred during purchase.');
+      console.error('Purchase error:', error);
+
+      // Handle Test Store specific errors
+      if (error.code === '5' || error.message?.includes('Test purchase failure')) {
+        Alert.alert(
+          'Test Store Mode',
+          'You are using RevenueCat Test Store in Expo Go. Purchases are simulated and do NOT grant subscriptions.\n\nGo to your Profile to see your actual subscription status.\n\nTo test real purchases, build a standalone app with EAS Build.',
+          [{ text: 'OK' }]
+        );
+      } else if (!error.userCancelled) {
+        Alert.alert('Purchase Failed', error.message || 'An error occurred during purchase.');
+      }
     } finally {
       setPurchasing(false);
     }
@@ -144,7 +183,9 @@ export default function PaywallScreen({ navigation }: Props) {
             <View style={styles.planHeader}>
               <View>
                 <Text style={[styles.planName, { color: colors.text }]}>Yearly Plan</Text>
-                <Text style={[styles.planPrice, { color: colors.text }]}>$29.99/year</Text>
+                <Text style={[styles.planPrice, { color: colors.text }]}>
+                  {yearlyPackage?.product.priceString || '$29.99'}/year
+                </Text>
               </View>
               <View style={styles.radioButton}>
                 {selectedPackage === 'yearly' && (
@@ -152,9 +193,11 @@ export default function PaywallScreen({ navigation }: Props) {
                 )}
               </View>
             </View>
-            <Text style={[styles.planSavings, { color: colors.primary }]}>
-              Save 50% compared to monthly
-            </Text>
+            {monthlyPackage && yearlyPackage && (
+              <Text style={[styles.planSavings, { color: colors.primary }]}>
+                Save {Math.round((1 - (yearlyPackage.product.price / 12) / monthlyPackage.product.price) * 100)}% compared to monthly
+              </Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -171,7 +214,9 @@ export default function PaywallScreen({ navigation }: Props) {
             <View style={styles.planHeader}>
               <View>
                 <Text style={[styles.planName, { color: colors.text }]}>Monthly Plan</Text>
-                <Text style={[styles.planPrice, { color: colors.text }]}>$4.99/month</Text>
+                <Text style={[styles.planPrice, { color: colors.text }]}>
+                  {monthlyPackage?.product.priceString || '$4.99'}/month
+                </Text>
               </View>
               <View style={styles.radioButton}>
                 {selectedPackage === 'monthly' && (
@@ -201,7 +246,9 @@ export default function PaywallScreen({ navigation }: Props) {
         </TouchableOpacity>
 
         <Text style={[styles.disclaimer, { color: colors.placeholder }]}>
-          7-day free trial, then {selectedPackage === 'yearly' ? '$29.99/year' : '$4.99/month'}.
+          7-day free trial, then {selectedPackage === 'yearly'
+            ? (yearlyPackage?.product.priceString || '$29.99') + '/year'
+            : (monthlyPackage?.product.priceString || '$4.99') + '/month'}.
           Cancel anytime.
         </Text>
       </ScrollView>
