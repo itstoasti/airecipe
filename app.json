@@ -23,16 +23,21 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.airecipeapp",
-      "softwareKeyboardLayoutMode": "resize",
-      "navigationBar": {
-        "visible": "sticky-immersive",
-        "barStyle": "dark-content",
-        "backgroundColor": "#00000000"
-      }
+      "package": "com.deanfieldz.yummy",
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "594c33e6-6744-4f10-9a88-0a65154438d1"
+      }
+    },
+    "owner": "deanfieldz",
+    "plugins": [
+      "expo-font",
+      "expo-sqlite"
+    ]
   }
 }

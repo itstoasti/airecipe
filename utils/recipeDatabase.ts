@@ -1,5 +1,6 @@
 import { supabaseFetch, DatabaseRecipe } from './supabaseClient';
 import { Recipe } from '../types';
+import { autoCategorizeRecipe } from './recipeCategorization';
 
 // Cache for randomized recipes to maintain consistent order across pagination
 let randomizedRecipesCache: DatabaseRecipe[] | null = null;
@@ -10,6 +11,9 @@ let randomCacheKey: string | null = null;
  */
 export const saveRecipeToDatabase = async (recipe: Recipe): Promise<void> => {
   try {
+    // Auto-categorize the recipe if it doesn't have a category
+    const category = recipe.category || autoCategorizeRecipe(recipe);
+
     await supabaseFetch('recipes', 'POST', {
       id: recipe.id,
       title: recipe.title,
@@ -21,6 +25,7 @@ export const saveRecipeToDatabase = async (recipe: Recipe): Promise<void> => {
       view_count: 0,
       is_popular: false,
       image_url: recipe.imageUrl || null,
+      category: category,
     });
   } catch (error) {
     // Silently fail - don't block the user experience
@@ -52,6 +57,7 @@ export const getPopularRecipes = async (limit: number = 4, offset: number = 0): 
       servingSize: dbRecipe.serving_size,
       caloriesPerServing: dbRecipe.calories_per_serving,
       imageUrl: dbRecipe.image_url,
+      category: dbRecipe.category,
     }));
   } catch (error) {
     console.error('Error fetching popular recipes:', error);
@@ -60,13 +66,14 @@ export const getPopularRecipes = async (limit: number = 4, offset: number = 0): 
 };
 
 /**
- * Get all recipes from the database with pagination, search, and sorting
+ * Get all recipes from the database with pagination, search, sorting, and category filtering
  */
 export const getAllRecipes = async (
   page: number = 0,
   limit: number = 20,
   searchQuery?: string,
-  sortBy: 'random' | 'newest' | 'popular' | 'alphabetical' = 'random'
+  sortBy: 'random' | 'newest' | 'popular' | 'alphabetical' = 'random',
+  category?: string
 ): Promise<Recipe[]> => {
   try {
     let data;
@@ -74,15 +81,26 @@ export const getAllRecipes = async (
     if (sortBy === 'random') {
       // For random sorting, we need to fetch all recipes and randomize client-side
       // Use cache to maintain consistent order across pagination
-      const cacheKey = `random_${searchQuery || 'all'}`;
+      const cacheKey = `random_${searchQuery || 'all'}_${category || 'all'}`;
 
-      // If cache is invalid or doesn't match current search, refresh it
+      // If cache is invalid or doesn't match current search/category, refresh it
       if (!randomizedRecipesCache || randomCacheKey !== cacheKey) {
         let url = 'recipes?select=*';
 
+        // Build query filters
+        const filters: string[] = [];
+
         if (searchQuery && searchQuery.trim()) {
           const query = searchQuery.trim();
-          url = `recipes?select=*&or=(title.ilike.*${query}*,ingredients.cs.{${query}})`;
+          filters.push(`or=(title.ilike.*${query}*,ingredients.cs.{${query}})`);
+        }
+
+        if (category && category.toLowerCase() !== 'all') {
+          filters.push(`category=ilike.${category}`);
+        }
+
+        if (filters.length > 0) {
+          url = `recipes?select=*&${filters.join('&')}`;
         }
 
         const fetchedData = await supabaseFetch(url, 'GET');
@@ -115,11 +133,21 @@ export const getAllRecipes = async (
         orderBy = 'title.asc';
       }
 
-      let url = `recipes?select=*&order=${orderBy}&limit=${limit}&offset=${offset}`;
+      // Build query filters
+      const filters: string[] = [];
 
       if (searchQuery && searchQuery.trim()) {
         const query = searchQuery.trim();
-        url = `recipes?select=*&or=(title.ilike.*${query}*,ingredients.cs.{${query}})&order=${orderBy}&limit=${limit}&offset=${offset}`;
+        filters.push(`or=(title.ilike.*${query}*,ingredients.cs.{${query}})`);
+      }
+
+      if (category && category.toLowerCase() !== 'all') {
+        filters.push(`category=ilike.${category}`);
+      }
+
+      let url = `recipes?select=*&order=${orderBy}&limit=${limit}&offset=${offset}`;
+      if (filters.length > 0) {
+        url = `recipes?select=*&${filters.join('&')}&order=${orderBy}&limit=${limit}&offset=${offset}`;
       }
 
       data = await supabaseFetch(url, 'GET');
@@ -139,6 +167,7 @@ export const getAllRecipes = async (
       servingSize: dbRecipe.serving_size,
       caloriesPerServing: dbRecipe.calories_per_serving,
       imageUrl: dbRecipe.image_url,
+      category: dbRecipe.category,
     }));
   } catch (error) {
     console.error('Error fetching all recipes:', error);

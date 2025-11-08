@@ -10,6 +10,7 @@ import {
   Modal,
   TextInput,
   Image,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CompositeNavigationProp } from '@react-navigation/native';
@@ -32,6 +33,16 @@ interface Props {
 
 type SortOption = 'random' | 'newest' | 'popular' | 'alphabetical';
 
+const RECIPE_CATEGORIES = [
+  { label: 'All', value: 'All', icon: 'grid-outline' },
+  { label: 'Breakfast', value: 'Breakfast', icon: 'sunny-outline' },
+  { label: 'Lunch', value: 'Lunch', icon: 'partly-sunny-outline' },
+  { label: 'Dinner', value: 'Dinner', icon: 'moon-outline' },
+  { label: 'Snacks', value: 'Snacks', icon: 'fast-food-outline' },
+  { label: 'Drinks', value: 'Drinks', icon: 'cafe-outline' },
+  { label: 'Desserts', value: 'Desserts', icon: 'ice-cream-outline' },
+];
+
 export default function AllRecipesScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -39,10 +50,12 @@ export default function AllRecipesScreen({ navigation }: Props) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('random');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [sortModalVisible, setSortModalVisible] = useState(false);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [successVisible, setSuccessVisible] = useState(false);
@@ -57,10 +70,10 @@ export default function AllRecipesScreen({ navigation }: Props) {
     setRecipes([]);
     setPage(0);
     setHasMore(true);
-    loadRecipes(0, sortBy, searchQuery);
+    loadRecipes(0, sortBy, searchQuery, selectedCategory);
   };
 
-  const loadRecipes = async (pageNum: number, sort: SortOption, search: string) => {
+  const loadRecipes = async (pageNum: number, sort: SortOption, search: string, category?: string) => {
     if (pageNum === 0) {
       setLoading(true);
     } else {
@@ -68,7 +81,7 @@ export default function AllRecipesScreen({ navigation }: Props) {
     }
 
     try {
-      const newRecipes = await getAllRecipes(pageNum, 10, search || undefined, sort);
+      const newRecipes = await getAllRecipes(pageNum, 10, search || undefined, sort, category !== 'All' ? category : undefined);
 
       if (newRecipes.length < 10) {
         setHasMore(false);
@@ -98,7 +111,7 @@ export default function AllRecipesScreen({ navigation }: Props) {
     setRecipes([]);
     setPage(0);
     setHasMore(true);
-    loadRecipes(0, sortBy, query);
+    loadRecipes(0, sortBy, query, selectedCategory);
   };
 
   const handleSortChange = (newSort: SortOption) => {
@@ -107,14 +120,23 @@ export default function AllRecipesScreen({ navigation }: Props) {
     setRecipes([]);
     setPage(0);
     setHasMore(true);
-    loadRecipes(0, newSort, searchQuery);
+    loadRecipes(0, newSort, searchQuery, selectedCategory);
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setCategoryModalVisible(false);
+    setRecipes([]);
+    setPage(0);
+    setHasMore(true);
+    loadRecipes(0, sortBy, searchQuery, category);
   };
 
   const handleLoadMore = () => {
     if (!loadingMore && hasMore && recipes.length > 0) {
       const nextPage = page + 1;
       setPage(nextPage);
-      loadRecipes(nextPage, sortBy, searchQuery);
+      loadRecipes(nextPage, sortBy, searchQuery, selectedCategory);
     }
   };
 
@@ -225,15 +247,26 @@ export default function AllRecipesScreen({ navigation }: Props) {
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <View style={styles.headerRow}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>All Recipes</Text>
-          <TouchableOpacity
-            style={[styles.sortButton, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
-            onPress={() => setSortModalVisible(true)}
-          >
-            <Ionicons name="funnel-outline" size={18} color={colors.text} />
-            <Text style={[styles.sortButtonText, { color: colors.text }]}>
-              {sortBy === 'random' ? 'Random' : sortBy === 'newest' ? 'Newest' : sortBy === 'popular' ? 'Popular' : 'A-Z'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={[styles.filterButton, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
+              onPress={() => setCategoryModalVisible(true)}
+            >
+              <Ionicons name="apps-outline" size={18} color={colors.text} />
+              <Text style={[styles.filterButtonText, { color: colors.text }]}>
+                {selectedCategory}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterButton, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
+              onPress={() => setSortModalVisible(true)}
+            >
+              <Ionicons name="funnel-outline" size={18} color={colors.text} />
+              <Text style={[styles.filterButtonText, { color: colors.text }]}>
+                {sortBy === 'random' ? 'Random' : sortBy === 'newest' ? 'Newest' : sortBy === 'popular' ? 'Popular' : 'A-Z'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={[styles.searchContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
@@ -444,6 +477,48 @@ export default function AllRecipesScreen({ navigation }: Props) {
       </Modal>
 
       <Modal
+        visible={categoryModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCategoryModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Filter by Category</Text>
+
+            {RECIPE_CATEGORIES.map((category) => (
+              <TouchableOpacity
+                key={category.value}
+                style={[styles.categoryButton, {
+                  backgroundColor: selectedCategory === category.value ? colors.primary : colors.inputBackground
+                }]}
+                onPress={() => handleCategoryChange(category.value)}
+              >
+                <Ionicons
+                  name={category.icon as any}
+                  size={20}
+                  color={selectedCategory === category.value ? '#fff' : colors.text}
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={[styles.categoryButtonText, {
+                  color: selectedCategory === category.value ? '#fff' : colors.text
+                }]}>
+                  {category.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setCategoryModalVisible(false)}
+            >
+              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         visible={successVisible}
         transparent
         animationType="fade"
@@ -480,7 +555,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
   },
-  sortButton: {
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
@@ -489,7 +568,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 6,
   },
-  sortButtonText: {
+  filterButtonText: {
     fontSize: 14,
     fontWeight: '600',
   },

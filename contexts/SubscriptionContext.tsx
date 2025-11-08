@@ -29,8 +29,18 @@ interface SubscriptionContextType {
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
-// RevenueCat Public SDK Key (Google Play)
-const REVENUECAT_API_KEY = 'goog_afwSSRUziZnqoIyzqjwUPtAxZfY';
+// RevenueCat API Keys
+const REVENUECAT_PRODUCTION_KEY = 'goog_afwSSRUziZnqoIyzqjwUPtAxZfY';
+const REVENUECAT_TEST_STORE_KEY = 'test_jaMeZRSYllRUJjDhlWHJQJKtkel';
+
+// Detect if running in Expo Go
+const isExpoGo = () => {
+  try {
+    return require('expo-constants').default.appOwnership === 'expo';
+  } catch {
+    return false;
+  }
+};
 
 interface Props {
   children: ReactNode;
@@ -54,8 +64,15 @@ export function SubscriptionProvider({ children }: Props) {
 
   const initializePurchases = async () => {
     try {
+      // Use Test Store key in Expo Go, production key otherwise
+      const apiKey = isExpoGo() ? REVENUECAT_TEST_STORE_KEY : REVENUECAT_PRODUCTION_KEY;
+
+      if (isExpoGo()) {
+        console.log('Expo Go app detected. Using RevenueCat in Browser Mode.');
+      }
+
       // Configure RevenueCat
-      await Purchases.configure({ apiKey: REVENUECAT_API_KEY, appUserID: user?.id });
+      await Purchases.configure({ apiKey, appUserID: user?.id });
 
       // Get customer info
       const info = await Purchases.getCustomerInfo();

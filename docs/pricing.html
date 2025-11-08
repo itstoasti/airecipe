@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing - Yummy</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #0a0a0a;
+            background: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(254, 249, 243, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0a0a0a;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo img {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #0a0a0a;
+        }
+
+        .btn-primary {
+            background: #0a0a0a;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 100px;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+            transform: translateY(-1px);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 140px 60px 80px;
+            text-align: center;
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fef9f3;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+            color: #1a1a1a;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 60px;
+        }
+
+        .save-badge {
+            display: inline-block;
+            background: #4BA3D3;
+            color: white;
+            padding: 0.35rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Pricing Cards */
+        .pricing-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 60px 80px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            align-items: stretch;
+        }
+
+        .pricing-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px 32px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+        }
+
+        .pricing-card.featured {
+            background: #1a1a1a;
+            color: white;
+            border: none;
+            position: relative;
+        }
+
+        .pricing-card.featured:hover {
+            transform: translateY(-8px);
+        }
+
+        .featured-badge {
+            position: absolute;
+            top: -12px;
+            right: 32px;
+            background: #4BA3D3;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .plan-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .plan-description {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin-bottom: 2rem;
+        }
+
+        .price {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+
+        .currency {
+            font-size: 2rem;
+            margin-top: 0.5rem;
+        }
+
+        .period {
+            font-size: 1rem;
+            opacity: 0.7;
+            margin-bottom: 2rem;
+        }
+
+        .features {
+            list-style: none;
+            margin-bottom: 2rem;
+            flex-grow: 1;
+        }
+
+        .features li {
+            padding: 0.75rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .pricing-card.featured .features li {
+            border-bottom-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .features li:last-child {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            width: 18px;
+            height: 18px;
+            background: #4BA3D3;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .pricing-card.featured .check-icon {
+            background: #4BA3D3;
+        }
+
+        .check-icon::after {
+            content: '✓';
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .cta-button {
+            display: block;
+            text-align: center;
+            padding: 14px 32px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .pricing-card:not(.featured) .cta-button {
+            background: #0a0a0a;
+            color: white;
+        }
+
+        .pricing-card:not(.featured) .cta-button:hover {
+            background: #333;
+            transform: translateY(-1px);
+        }
+
+        .pricing-card.featured .cta-button {
+            background: white;
+            color: #0a0a0a;
+        }
+
+        .pricing-card.featured .cta-button:hover {
+            background: #f0f0f0;
+            transform: translateY(-1px);
+        }
+
+        /* Footer */
+        footer {
+            background: #0a0a0a;
+            padding: 60px 40px;
+            text-align: center;
+            color: white;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .copyright {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 968px) {
+            .pricing-container {
+                grid-template-columns: 1fr;
+                padding: 0 20px 60px;
+            }
+
+            .nav-container {
+                padding: 20px;
+            }
+
+            .nav-links {
+                gap: 20px;
+            }
+
+            .hero {
+                padding: 120px 20px 60px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-links a:not(.btn-primary) {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <img src="favicon.png" alt="Yummy Logo">
+                Yummy
+            </a>
+            <div class="nav-links">
+                <a href="index.html#features">Features</a>
+                <a href="index.html#testimonials">Reviews</a>
+                <a href="pricing.html">Pricing</a>
+                <a href="#" class="btn-primary">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Choose Your Plan</h1>
+        <p>Start free and upgrade anytime. No credit card required.</p>
+    </section>
+
+    <!-- Pricing Cards -->
+    <div class="pricing-container">
+        <!-- Free Plan -->
+        <div class="pricing-card">
+            <div class="plan-name">Free</div>
+            <div class="plan-description">Perfect for trying out Yummy</div>
+            <div class="price">
+                <span class="currency">$</span>
+                <span>0</span>
+            </div>
+            <div class="period">Forever free</div>
+            <ul class="features">
+                <li>
+                    <div class="check-icon"></div>
+                    <span>10 AI recipe generations per month</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Save unlimited recipes</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Basic meal planning</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Shopping list feature</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Recipe from ingredients</span>
+                </li>
+            </ul>
+            <a href="#" class="cta-button">Get Started</a>
+        </div>
+
+        <!-- Premium Monthly Plan -->
+        <div class="pricing-card featured">
+            <div class="featured-badge">Most Popular</div>
+            <div class="plan-name">Premium Monthly</div>
+            <div class="plan-description">Unlimited cooking creativity</div>
+            <div class="price">
+                <span class="currency">$</span>
+                <span>4.99</span>
+            </div>
+            <div class="period">per month</div>
+            <ul class="features">
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Unlimited AI recipe generations</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Advanced meal planning</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Dietary preference customization</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Save unlimited recipes</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Smart shopping lists</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Recipe from ingredients</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Priority customer support</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Ad-free experience</span>
+                </li>
+            </ul>
+            <a href="#" class="cta-button">Start Monthly</a>
+        </div>
+
+        <!-- Premium Yearly Plan -->
+        <div class="pricing-card">
+            <div class="plan-name">Premium Yearly <span class="save-badge">Save 20%</span></div>
+            <div class="plan-description">Best value for power users</div>
+            <div class="price">
+                <span class="currency">$</span>
+                <span>47.99</span>
+            </div>
+            <div class="period">per year</div>
+            <ul class="features">
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Unlimited AI recipe generations</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Advanced meal planning</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Dietary preference customization</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Save unlimited recipes</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Smart shopping lists</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Recipe from ingredients</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Priority customer support</span>
+                </li>
+                <li>
+                    <div class="check-icon"></div>
+                    <span>Ad-free experience</span>
+                </li>
+            </ul>
+            <a href="#" class="cta-button">Start Yearly</a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="privacy-policy.html">Privacy Policy</a>
+            <a href="delete-account.html">Delete Account</a>
+            <a href="delete-data.html">Delete Data</a>
+        </div>
+        <div class="copyright">
+            &copy; 2025 Yummy. All rights reserved.
+        </div>
+    </footer>
+</body>
+</html>

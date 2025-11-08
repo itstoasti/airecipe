@@ -17,6 +17,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -55,6 +56,33 @@ export default function LoginScreen({ navigation }: Props) {
 
   const handleSignUp = () => {
     navigation.navigate('SignUp');
+  };
+
+  const handleResetApp = async () => {
+    Alert.alert(
+      'Reset App',
+      'This will clear all app data. Use this to test onboarding flow.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.clear();
+              Alert.alert(
+                'Success',
+                'App data cleared! Now shake your device and tap "Reload" to see onboarding.',
+                [{ text: 'OK' }]
+              );
+            } catch (error) {
+              console.error('Error clearing storage:', error);
+              Alert.alert('Error', 'Failed to reset app');
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -164,6 +192,18 @@ export default function LoginScreen({ navigation }: Props) {
               Create New Account
             </Text>
           </TouchableOpacity>
+
+          {__DEV__ && (
+            <TouchableOpacity
+              style={styles.resetButton}
+              onPress={handleResetApp}
+              disabled={loading}
+            >
+              <Text style={[styles.resetButtonText, { color: colors.textSecondary }]}>
+                🔄 Reset App (Dev Only)
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
       </KeyboardAvoidingView>
@@ -262,5 +302,14 @@ const styles = StyleSheet.create({
   signUpButtonText: {
     fontSize: 18,
     fontWeight: '600',
+  },
+  resetButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  resetButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

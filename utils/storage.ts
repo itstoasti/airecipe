@@ -64,9 +64,24 @@ export const deleteFalApiKey = async (): Promise<void> => {
 };
 
 // Recipe Management
-export const saveRecipe = async (recipe: Recipe): Promise<void> => {
+export const saveRecipe = async (recipe: Recipe, isPro: boolean = false): Promise<void> => {
   try {
     const existingRecipes = await getSavedRecipes();
+
+    // Check if recipe already exists (update instead of add)
+    const existingIndex = existingRecipes.findIndex(r => r.id === recipe.id);
+    if (existingIndex !== -1) {
+      // Update existing recipe
+      existingRecipes[existingIndex] = recipe;
+      await AsyncStorage.setItem(RECIPES_STORAGE, JSON.stringify(existingRecipes));
+      return;
+    }
+
+    // Check free tier limit (10 recipes max)
+    if (!isPro && existingRecipes.length >= 10) {
+      throw new Error('Free tier limit reached. You can save up to 10 recipes. Upgrade to Pro for unlimited storage or delete some recipes.');
+    }
+
     const updatedRecipes = [...existingRecipes, recipe];
     await AsyncStorage.setItem(RECIPES_STORAGE, JSON.stringify(updatedRecipes));
   } catch (error) {
@@ -118,6 +133,16 @@ export const updateRecipe = async (updatedRecipe: Recipe): Promise<void> => {
   } catch (error) {
     console.error('Error updating recipe:', error);
     throw error;
+  }
+};
+
+export const getSavedRecipesCount = async (): Promise<number> => {
+  try {
+    const recipes = await getSavedRecipes();
+    return recipes.length;
+  } catch (error) {
+    console.error('Error getting saved recipes count:', error);
+    return 0;
   }
 };
 

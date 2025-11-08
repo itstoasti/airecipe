@@ -1,4 +1,4 @@
-package com.airecipeapp
+package com.deanfieldz.yummy
 
 import android.os.Build
 import android.os.Bundle

@@ -1,0 +1,6 @@
+{
+  "buildCommand": "echo 'No build needed - serving static HTML'",
+  "outputDirectory": "docs",
+  "installCommand": "echo 'No install needed'",
+  "framework": null
+}

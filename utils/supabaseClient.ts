@@ -14,6 +14,7 @@ export interface DatabaseRecipe {
   view_count: number;
   is_popular: boolean;
   image_url?: string;
+  category?: string;
 }
 
 // Auth types
@@ -70,6 +71,7 @@ export const supabaseAuth = {
   signUp: async (email: string, password: string) => {
     const url = `${SUPABASE_URL}/auth/v1/signup`;
 
+    console.log('supabaseAuth: Sending signup request...');
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -82,12 +84,16 @@ export const supabaseAuth = {
       }),
     });
 
+    console.log('supabaseAuth: Signup response status:', response.status);
+
     if (!response.ok) {
       const error = await response.json();
+      console.error('supabaseAuth: Signup failed:', error);
       throw new Error(error.msg || error.message || 'Failed to sign up');
     }
 
     const data = await response.json();
+    console.log('supabaseAuth: Signup response data:', JSON.stringify(data, null, 2));
     return data;
   },
 

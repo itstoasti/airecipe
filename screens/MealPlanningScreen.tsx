@@ -32,11 +32,14 @@ interface MealPlan {
     breakfast?: Recipe;
     lunch?: Recipe;
     dinner?: Recipe;
+    snacks?: Recipe;
+    drinks?: Recipe;
+    dessert?: Recipe;
   };
 }
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const MEAL_TIMES = ['breakfast', 'lunch', 'dinner'] as const;
+const MEAL_TIMES = ['breakfast', 'lunch', 'dinner', 'snacks', 'drinks', 'dessert'] as const;
 type MealTime = typeof MEAL_TIMES[number];
 
 const MEAL_PLAN_STORAGE_KEY = 'meal_plan';
@@ -210,7 +213,56 @@ export default function MealPlanningScreen({ navigation }: Props) {
         return 'partly-sunny-outline';
       case 'dinner':
         return 'moon-outline';
+      case 'snacks':
+        return 'fast-food-outline';
+      case 'drinks':
+        return 'cafe-outline';
+      case 'dessert':
+        return 'ice-cream-outline';
     }
+  };
+
+  const handleDayShoppingList = (day: string) => {
+    const dayMeals = mealPlan[day];
+    if (!dayMeals) {
+      Alert.alert('No Meals', 'Add meals to this day first to generate a shopping list.');
+      return;
+    }
+
+    // Collect all meals for the day
+    const meals: Recipe[] = [];
+    if (dayMeals.breakfast) meals.push(dayMeals.breakfast);
+    if (dayMeals.lunch) meals.push(dayMeals.lunch);
+    if (dayMeals.dinner) meals.push(dayMeals.dinner);
+    if (dayMeals.snacks) meals.push(dayMeals.snacks);
+    if (dayMeals.drinks) meals.push(dayMeals.drinks);
+    if (dayMeals.dessert) meals.push(dayMeals.dessert);
+
+    if (meals.length === 0) {
+      Alert.alert('No Meals', 'Add meals to this day first to generate a shopping list.');
+      return;
+    }
+
+    // Filter out manual entries (recipes with no ingredients)
+    const recipesWithIngredients = meals.filter(meal => meal.ingredients && meal.ingredients.length > 0);
+
+    if (recipesWithIngredients.length === 0) {
+      Alert.alert('No Ingredients', 'The meals for this day don\'t have ingredient lists. Try adding recipes from the database or your saved recipes.');
+      return;
+    }
+
+    // Create a combined recipe for the day
+    const dayRecipe: Recipe = {
+      id: `day-${day}-${Date.now()}`,
+      title: `${day}'s Meal Plan`,
+      ingredients: recipesWithIngredients.flatMap(meal => meal.ingredients),
+      instructions: [],
+      estimatedTime: '',
+      servingSize: 1,
+      caloriesPerServing: recipesWithIngredients.reduce((sum, meal) => sum + meal.caloriesPerServing, 0),
+    };
+
+    navigation.navigate('ShoppingList', { recipe: dayRecipe });
   };
 
   const renderMealCard = (day: string, mealTime: MealTime) => {
@@ -315,7 +367,16 @@ export default function MealPlanningScreen({ navigation }: Props) {
         ) : (
           DAYS_OF_WEEK.map((day) => (
             <View key={day} style={[styles.dayCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.dayTitle, { color: colors.text }]}>{day}</Text>
+              <View style={styles.dayHeader}>
+                <Text style={[styles.dayTitle, { color: colors.text }]}>{day}</Text>
+                <TouchableOpacity
+                  style={[styles.shoppingListButton, { backgroundColor: colors.primary }]}
+                  onPress={() => handleDayShoppingList(day)}
+                >
+                  <Ionicons name="cart-outline" size={16} color="#fff" />
+                  <Text style={styles.shoppingListButtonText}>Shopping List</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.mealsContainer}>
                 {MEAL_TIMES.map((mealTime) => renderMealCard(day, mealTime))}
               </View>
@@ -513,10 +574,28 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  dayHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   dayTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 12,
+  },
+  shoppingListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  shoppingListButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   mealsContainer: {
     gap: 8,
