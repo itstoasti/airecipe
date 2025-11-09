@@ -199,4 +199,39 @@ export const supabaseAuth = {
       created_at: data.created_at,
     };
   },
+
+  // Refresh access token using refresh token
+  refreshToken: async (refreshToken: string) => {
+    const url = `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        refresh_token: refreshToken,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.msg || error.message || 'Failed to refresh token');
+    }
+
+    const data = await response.json();
+
+    return {
+      session: {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        user: {
+          id: data.user.id,
+          email: data.user.email,
+          created_at: data.user.created_at,
+        },
+      },
+    };
+  },
 };

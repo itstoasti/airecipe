@@ -88,7 +88,7 @@ function TypingIndicator() {
 
 export default function ChatToModifyScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
-  const { session } = useAuth();
+  const { session, getValidAccessToken } = useAuth();
   const { isPro } = useSubscription();
   const { recipe: initialRecipe } = route.params;
   const [recipe, setRecipe] = useState<Recipe>(initialRecipe);
@@ -124,14 +124,17 @@ export default function ChatToModifyScreen({ route, navigation }: Props) {
     setLoading(true);
 
     try {
-      if (!session?.access_token) {
+      if (!session) {
         throw new Error('You must be logged in to chat with the chef');
       }
+
+      // Get a valid access token (will auto-refresh if expired)
+      const accessToken = await getValidAccessToken();
       const { response, updatedRecipe } = await chatWithChef(
         recipe,
         messages,
         inputText,
-        session.access_token
+        accessToken
       );
 
       const assistantMessage: Message = { role: 'assistant', content: response };

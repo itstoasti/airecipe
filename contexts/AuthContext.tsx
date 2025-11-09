@@ -24,6 +24,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   clearJustSignedUp: () => void;
+  getValidAccessToken: () => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -182,6 +183,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setJustSignedUp(false);
   };
 
+  // Helper function to check if JWT token is expired
+  const isTokenExpired = (token: string): boolean => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expirationTime = payload.exp * 1000; // Convert to milliseconds
+      const currentTime = Date.now();
+      // Consider token expired if it expires in less than 5 minutes
+      return expirationTime - currentTime < 5 * 60 * 1000;
+    } catch (error) {
+      console.error('Error checking token expiration:', error);
+      return true; // Consider token expired if we can't parse it
+    }
+  };
+
+  // Get a valid access token, refreshing if necessary
+  const getValidAccessToken = async (): Promise<string> => {
+    if (!session) {
+      throw new Error('No active session');
+    }
+
+    // Check if token is expired or about to expire
+    if (isTokenExpired(session.access_token)) {
+      console.log('Access token expired, refreshing...');
+      try {
+        const { session: newSession } = await supabaseAuth.refreshToken(session.refresh_token);
+        await saveSession(newSession);
+        console.log('Token refreshed successfully');
+        return newSession.access_token;
+      } catch (error: any) {
+        console.error('Failed to refresh token:', error);
+        // If refresh fails, clear session and force re-login
+        await clearSession();
+        throw new Error('Session expired. Please sign in again.');
+      }
+    }
+
+    return session.access_token;
+  };
+
   const value = {
     user,
     session,
@@ -192,6 +232,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signOut,
     resetPassword,
     clearJustSignedUp,
+    getValidAccessToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

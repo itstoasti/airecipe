@@ -19,19 +19,34 @@ serve(async (req) => {
     // Verify authentication
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
+      console.error('Missing authorization header')
       throw new Error('No authorization header')
     }
 
+    console.log('Auth header present, verifying user...')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+
+    console.log('Supabase URL:', supabaseUrl)
+    console.log('Has anon key:', !!supabaseAnonKey)
+
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl ?? '',
+      supabaseAnonKey ?? '',
       { global: { headers: { Authorization: authHeader } } }
     )
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
-    if (authError || !user) {
-      throw new Error('Unauthorized')
+    if (authError) {
+      console.error('Auth error:', authError)
+      throw new Error(`Unauthorized: ${authError.message}`)
     }
+    if (!user) {
+      console.error('No user returned from auth')
+      throw new Error('Unauthorized: No user found')
+    }
+
+    console.log('User authenticated:', user.id)
 
     // Get request body
     const { query, servingSize = 4 } = await req.json()

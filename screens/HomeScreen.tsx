@@ -52,7 +52,7 @@ const LOADING_MESSAGES = [
 
 export default function HomeScreen({ navigation }: Props) {
   const { colors } = useTheme();
-  const { session } = useAuth();
+  const { session, getValidAccessToken } = useAuth();
   const { isPro } = useSubscription();
   const [query, setQuery] = useState('');
   const [servingSize, setServingSize] = useState(2);
@@ -153,7 +153,7 @@ export default function HomeScreen({ navigation }: Props) {
     setLoadingMessage(LOADING_MESSAGES[0]);
     setLastSearchQuery(queryToUse);
     try {
-      if (!session?.access_token) {
+      if (!session) {
         throw new Error('You must be logged in to generate recipes');
       }
 
@@ -172,7 +172,9 @@ export default function HomeScreen({ navigation }: Props) {
         return;
       }
 
-      const suggestions = await getRecipeSuggestions(queryToUse, servingSize, session.access_token);
+      // Get a valid access token (will auto-refresh if expired)
+      const accessToken = await getValidAccessToken();
+      const suggestions = await getRecipeSuggestions(queryToUse, servingSize, accessToken);
       setRecipes(suggestions);
 
       // Increment usage count after successful generation
@@ -256,7 +258,7 @@ export default function HomeScreen({ navigation }: Props) {
     setLoading(true);
     setLoadingMessage(LOADING_MESSAGES[0]);
     try {
-      if (!session?.access_token) {
+      if (!session) {
         throw new Error('You must be logged in to generate recipes');
       }
 
@@ -278,7 +280,10 @@ export default function HomeScreen({ navigation }: Props) {
       const ingredientsText = ingredientsList.join(', ');
       const searchQuery = `recipes using only these ingredients: ${ingredientsText}`;
       setLastSearchQuery(searchQuery);
-      const suggestions = await getRecipeSuggestions(searchQuery, servingSize, session.access_token);
+
+      // Get a valid access token (will auto-refresh if expired)
+      const accessToken = await getValidAccessToken();
+      const suggestions = await getRecipeSuggestions(searchQuery, servingSize, accessToken);
       setRecipes(suggestions);
 
       // Increment usage count after successful generation
@@ -307,7 +312,7 @@ export default function HomeScreen({ navigation }: Props) {
 
     setLoadingMore(true);
     try {
-      if (!session?.access_token) {
+      if (!session) {
         throw new Error('You must be logged in to generate recipes');
       }
 
@@ -326,7 +331,9 @@ export default function HomeScreen({ navigation }: Props) {
         return;
       }
 
-      const newSuggestions = await getRecipeSuggestions(lastSearchQuery, servingSize, session.access_token);
+      // Get a valid access token (will auto-refresh if expired)
+      const accessToken = await getValidAccessToken();
+      const newSuggestions = await getRecipeSuggestions(lastSearchQuery, servingSize, accessToken);
       setRecipes((prevRecipes) => [...prevRecipes, ...newSuggestions]);
 
       // Increment usage count after successful generation
